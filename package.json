@@ -1,0 +1,34 @@
+{
+	"name": "darts-scoreboard",
+	"version": "1.0.0",
+	"type": "module",
+	"scripts": {
+		"dev": "vite"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"dependencies": {
+		"entries-to-object": "^1.0.1",
+		"http-errors": "github:subhero24/http-errors",
+		"key-value-database": "github:subhero24/key-value-database",
+		"react": "^18.2.0",
+		"react-dom": "^18.2.0",
+		"react-hooks": "github:subhero24/react-hooks",
+		"react-sprout": "^0.1.1"
+	},
+	"devDependencies": {
+		"@types/react": "^18.2.66",
+		"@types/react-dom": "^18.2.22",
+		"@vitejs/plugin-react": "^4.2.1",
+		"autoprefixer": "^10.4.19",
+		"eslint": "^8.57.0",
+		"eslint-plugin-react": "^7.34.1",
+		"eslint-plugin-react-hooks": "^4.6.0",
+		"eslint-plugin-react-refresh": "^0.4.6",
+		"postcss": "^8.4.38",
+		"prettier": "^3.2.5",
+		"tailwindcss": "^3.4.3",
+		"vite": "^5.2.0"
+	}
+}
