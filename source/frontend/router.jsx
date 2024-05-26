@@ -1,7 +1,7 @@
 import React from 'react';
 import Routes from 'react-sprout';
 import Home from './routes/home.jsx';
-import Game from './routes/game.jsx';
+import Game, { gameActions } from './routes/game.jsx';
 import Players, { playerActions } from './routes/players.jsx';
 import Start from './routes/start.jsx';
 import Games from './routes/games.jsx';
@@ -14,7 +14,7 @@ export default Routes(
 		<Start path="start" />
 
 		<Games path="games" />
-		<Game path="games/:gameId" />
+		<Game path="games/:gameId" action={gameActions} />
 
 		<Players path="players" action={playerActions} />
 	</Root>

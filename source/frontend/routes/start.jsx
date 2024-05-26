@@ -13,7 +13,7 @@ export default function Start() {
 
 			{players.map((player) => (
 				<div key={player.id}>
-					<input type="checkbox" id={`player-${player.id}`} name="players[]" value={player.id} />
+					<input type="checkbox" id={`player-${player.id}`} name="playerIds[]" value={player.id} />
 					<label htmlFor={`player-${player.id}`}>{player.name}</label>
 				</div>
 			))}
