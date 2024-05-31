@@ -9,6 +9,6 @@ export default {
 	},
 	build: {
 		emptyOutDir: true,
-		outDir: '../build',
+		outDir: '../../dist',
 	},
 };
