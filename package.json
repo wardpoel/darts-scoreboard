@@ -15,7 +15,7 @@
 		"react": "^18.2.0",
 		"react-dom": "^18.2.0",
 		"react-hooks": "github:subhero24/react-hooks",
-		"react-sprout": "^0.1.1",
+		"react-sprout": "^0.1.3",
 		"tailwindcss-grid-placement": "^0.0.2"
 	},
 	"devDependencies": {

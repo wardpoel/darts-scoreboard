@@ -1,13 +1,17 @@
 import React, { useRef, useState } from 'react';
-import { useForm, useParams } from 'react-sprout';
+import { Link, useForm, useParams } from 'react-sprout';
 import { useFind } from 'key-value-database';
 
 import db from '../database';
 import { NotFoundError } from 'http-errors';
 import Header from '../components/header';
 import PlayerName from '../components/player-name';
-
-const INPUTS = [7, 8, 9, 4, 5, 6, 1, 2, 3];
+import checkouts from '../checkouts';
+import { CHECKOUT_TYPE } from './root';
+import KeyboardButton from '../components/keyboard-button';
+import DartsUsedRadioButton from '../components/darts-used-radio-button';
+import UndoIcon from '../components/icons/undo-icon';
+import BackIcon from '../components/icons/back-icon';
 
 export async function gameActions({ data, params }) {
 	let { gameId } = params;
@@ -25,16 +29,7 @@ export async function gameActions({ data, params }) {
 			leg = game.legs[game.legs.length - 1];
 		}
 
-		let lastThrow = leg.throws[leg.throws.length - 1];
-		let lastThrowerId = lastThrow?.playerId;
-
-		let playerIds = game.playerIds;
-		let throwerId;
-		if (lastThrowerId == undefined) {
-			throwerId = playerIds[0];
-		} else {
-			throwerId = playerIds[(playerIds.indexOf(lastThrowerId) + 1) % playerIds.length];
-		}
+		let throwerId = getThrowerId(game);
 
 		// add the score to the leg
 		let score = parseInt(data.score);
@@ -45,8 +40,12 @@ export async function gameActions({ data, params }) {
 
 		// check if the score is valid
 		if (totalScore + score > game.score) throw new Error('Score exceeds the game score'); // bust
-		if (game.checkout === 'DOUBLE' && score === game.score - 1) throw new Error('Score exceeds the game score'); // bust (double checkout)
-		if (game.checkout === 'TRIPLE' && score === game.score - 2) throw new Error('Score exceeds the game score'); // bust (triple checkout)
+		if (game.checkout === CHECKOUT_TYPE.double && score === game.score - 1) {
+			throw new Error('Score exceeds the game score'); // bust (double checkout)
+		}
+		if (game.checkout === CHECKOUT_TYPE.triple && score === game.score - 2) {
+			throw new Error('Score exceeds the game score'); // bust (triple checkout)
+		}
 
 		let isFinish = totalScore + score === game.score;
 		if (isFinish) {
@@ -61,188 +60,240 @@ export async function gameActions({ data, params }) {
 
 		// update the game
 		db.update('games', game.id, game);
+	} else if (intent === 'undo_score') {
+		let game = db.find('games', gameId);
+		if (game == undefined) throw new NotFoundError('Game not found');
+
+		let leg = game.legs[game.legs.length - 1];
+		if (leg == undefined || leg.winnerId != undefined) throw new Error('No throws to undo');
+
+		let lastThrow = leg.throws.pop();
+		if (lastThrow == undefined) throw new Error('No throws to undo');
+
+		db.update('games', game.id, game);
 	}
 }
+
+const DateTimeFormat = new Intl.DateTimeFormat('nl-BE', {
+	day: 'numeric',
+	year: 'numeric',
+	month: '2-digit',
+	hour: 'numeric',
+	minute: 'numeric',
+});
 
 export default function Game() {
 	let { gameId } = useParams();
 	let game = useFind(db, 'games', gameId);
 	if (game == undefined) throw new NotFoundError('Game not found');
 
-	let playerLegWins = {};
-	for (let leg of game.legs) {
-		if (leg.winnerId == undefined) continue;
-		let current = playerLegWins[leg.winnerId] ?? 0;
-		playerLegWins[leg.winnerId] = current + 1;
-	}
+	let throwerId = getThrowerId(game);
 
-	return (
-		<div>
-			<Header>
-				<h1>Game - {new Date(game.startedAt).toDateString()}</h1>
-			</Header>
-
-			<main>
-				<GamePlayers game={game} />
-				<CurrentScores game={game} />
-
-				<InputForm />
-			</main>
-		</div>
-	);
-}
-
-function GamePlayers(props) {
-	let { game } = props;
-	let throwerId = useThrowerId(game);
-
-	return (
-		<ul className="grid grid-cols-2 -mx-4 bg-gray-700 text-white">
-			{game.playerIds.map((playerId) => {
-				let leg = game.legs[game.legs.length - 1];
-				let playerThrows = [];
-				if (leg != undefined && leg.winnerId == undefined) {
-					playerThrows = leg.throws.filter((t) => t.playerId === playerId);
-				}
-
-				let dartsThrown = playerThrows.reduce((acc, t) => acc + t.darts, 0);
-				return (
-					<li
-						key={playerId}
-						data-thrower={throwerId === playerId}
-						className="px-4 group py-4 font-semibold text-lg flex gap-1 even:flex-row-reverse"
-					>
-						<PlayerName id={playerId} />
-						<span>({dartsThrown})</span>
-						<span className="hidden group-data-[thrower=true]:block group-even:mr-2">🎯</span>
-					</li>
-				);
-			})}
-		</ul>
-	);
-}
-
-function InputForm() {
 	let scoreFormRef = useRef();
 	let [AddScoreForm] = useForm();
-	let [score, setScore] = useState('0');
-	let [isBusted, setIsBusted] = useState(false);
+	let [UndoScoreForm] = useForm();
+	let [score, setScore] = useState('');
 
 	function handleClick(event) {
 		let value = event.target.getAttribute('data-value');
 		let currentValue = scoreFormRef.current.score.value;
 
 		if (value === 'BUST') {
-			setIsBusted(true);
+			setScore('BUST');
 			return;
 		}
 
 		if (value === 'CLEAR') {
-			setScore('0');
-			setIsBusted(false);
+			setScore('');
 			return;
 		}
 
 		let newValue = `${currentValue}${value}`;
 		let parsedNewValue = parseInt(newValue, 10);
-		if (parsedNewValue > 180) {
-			// todo show error
-			return;
-		}
+		if (parsedNewValue > 180) return;
 
 		setScore(`${parsedNewValue}`);
 	}
 
 	return (
-		<AddScoreForm
-			id="add_score_form"
-			ref={scoreFormRef}
-			action="."
-			method="post"
-			onNavigateEnd={() => {
-				setScore('0');
-				scoreFormRef.current.reset();
-			}}
-		>
-			<div>{isBusted ? 'BUST' : score}</div>
-			<input name="score" type="text" required placeholder="Score" hidden readOnly value={score} />
+		<div className="grid grid-rows-[max-content,auto] h-full">
+			<Header>
+				<h1 className="flex items-center justify-between">
+					<span className="flex items-center gap-4">
+						<Link href=".." push={false}>
+							<BackIcon className="size-7" />
+						</Link>
+						<span>
+							{game.score} {game.checkout} out
+						</span>
+					</span>
+					<span className="font-light text-blue-100">{DateTimeFormat.format(new Date(game.startedAt))}</span>
+				</h1>
+			</Header>
 
-			<div className="grid grid-cols-3">
-				{INPUTS.map((input) => (
-					<button key={input} onClick={handleClick} data-value={input} type="button">
-						{input}
-					</button>
-				))}
+			<main className="grid grid-rows-[auto,max-content]">
+				<ul className="grid grid-cols-2">
+					{game.playerIds.map((playerId) => {
+						let legs = game.legs ?? [];
+						let playerThrows = legs.flatMap((l) => l.throws).filter((t) => t.playerId === playerId);
+						let leg = game.legs[game.legs.length - 1];
 
-				<button onClick={handleClick} data-value={isBusted || score !== '0' ? 'CLEAR' : 'BUST'} type="button">
-					{isBusted || score !== '0' ? 'C' : 'BUST'}
-				</button>
+						let legsWon = legs.filter((l) => l.winnerId === playerId).length;
 
-				<button onClick={handleClick} data-value="0" type="button">
-					0
-				</button>
+						let legAverage = 0;
+						let dartsThrown = 0;
+						let legTotalScore = 0;
+						let lastPlayerScore;
+						if (leg != undefined && leg.winnerId == undefined) {
+							let legPlayerThrows = leg.throws.filter((t) => t.playerId === playerId);
+							dartsThrown = legPlayerThrows.reduce((acc, t) => acc + t.darts, 0);
+							legTotalScore = legPlayerThrows.reduce((acc, t) => acc + t.score, 0);
+							lastPlayerScore = legPlayerThrows[legPlayerThrows.length - 1]?.score;
 
-				<button type="submit" name="intent" value="add_score">
-					OK
-				</button>
-			</div>
+							legAverage = legPlayerThrows.length === 0 ? 0 : (legTotalScore / legPlayerThrows.length).toFixed(1);
+						}
 
-			<div>
-				<input type="radio" id="1" name="darts" value={1} />
-				<label htmlFor="1">1</label>
-			</div>
-			<div>
-				<input type="radio" id="2" name="darts" value={2} />
-				<label htmlFor="2">2</label>
-			</div>
-			<div>
-				<input type="radio" id="3" name="darts" value={3} defaultChecked />
-				<label htmlFor="3">3</label>
-			</div>
-		</AddScoreForm>
-	);
-}
+						let remaining = game.score - legTotalScore;
+						let checkout = checkouts[remaining];
 
-function CurrentScores(props) {
-	let { game } = props;
+						let matchTotalScore = playerThrows.reduce((acc, t) => acc + t.score, 0);
+						let matchAverage = playerThrows.length === 0 ? 0 : (matchTotalScore / playerThrows.length).toFixed(1);
+						return (
+							<li
+								key={playerId}
+								data-thrower={throwerId === playerId}
+								className="group grid grid-rows-[max-content,max-content,minmax(min-content,1fr)] text-gray-400 data-[thrower=true]:text-white"
+							>
+								<div className="px-4 py-4 font-semibold text-lg flex gap-1 items-center justify-between group-even:flex-row-reverse">
+									<div className="group-even:flex-row-reverse truncate flex items-center gap-1">
+										<span className="group-even:flex-grow truncate">
+											<PlayerName id={playerId} />
+										</span>
+										<span>({dartsThrown})</span>
+										<span className="group-data-[thrower=true]:inline hidden mx-1">🎯</span>
+									</div>
 
-	return (
-		<div>
-			{game.playerIds.map((playerId) => (
-				<CurrentPlayerScore key={playerId} game={game} playerId={playerId} />
-			))}
+									<span className="bg-violet-500 p-4 -my-4 group-odd:-mr-4 group-even:-ml-4 text-white">{legsWon}</span>
+								</div>
+
+								<div className="py-4 bg-gray-700 justify-center inline-flex gap-1 items-center">
+									<span>ma: {matchAverage}</span>
+									<span>•</span>
+									<span>la: {legAverage}</span>
+								</div>
+
+								<div className="flex flex-col items-center self-y-center">
+									<div className="font-medium text-[5.5rem] leading-none sm:text-8xl">{remaining}</div>
+									<div className="gap-3 justify-center font-light mt-3 text-[1.75rem] leading-none flex">
+										{checkout?.map((c, i) => (
+											<span key={i}>{c}</span>
+										))}
+									</div>
+								</div>
+
+								<div className="text-2xl">
+									<div
+										data-score={score !== ''}
+										className="p-4 data-[score=true]:text-gray-800 bg-white text-gray-400 group-data-[thrower=false]:hidden"
+									>
+										{score === '' ? 'Enter score' : score}
+									</div>
+
+									<UndoScoreForm
+										method="post"
+										className="group-data-[thrower=true]:hidden flex justify-between text-gray-400 items-center gap-2 bg-gray-700 p-4"
+									>
+										<span>Last: {lastPlayerScore ?? 0}</span>
+										<button
+											type="submit"
+											name="intent"
+											disabled={lastPlayerScore == undefined}
+											value="undo_score"
+											className="p-0.5 disabled:text-gray-500"
+										>
+											<UndoIcon className="size-7" />
+										</button>
+									</UndoScoreForm>
+								</div>
+							</li>
+						);
+					})}
+				</ul>
+
+				<AddScoreForm
+					ref={scoreFormRef}
+					method="post"
+					onNavigateEnd={() => {
+						setScore('');
+						scoreFormRef.current.reset();
+					}}
+				>
+					<input name="score" type="text" required hidden readOnly value={score} />
+
+					<div className="grid grid-cols-[repeat(3,minmax(0,1fr)),min-content] gap-px text-center text-3xl">
+						<KeyboardButton onClick={handleClick} value="7" />
+						<KeyboardButton onClick={handleClick} value="8" />
+						<KeyboardButton onClick={handleClick} value="9" />
+
+						<span className="text-sm p-4 text-gray-300">Darts used</span>
+
+						<KeyboardButton onClick={handleClick} value="4" />
+						<KeyboardButton onClick={handleClick} value="5" />
+						<KeyboardButton onClick={handleClick} value="6" />
+
+						<DartsUsedRadioButton id="1" value={1} />
+
+						<KeyboardButton onClick={handleClick} value="1" />
+						<KeyboardButton onClick={handleClick} value="2" />
+						<KeyboardButton onClick={handleClick} value="3" />
+
+						<DartsUsedRadioButton id="2" value={2} />
+
+						<button
+							onClick={handleClick}
+							data-value={score === '' ? 'BUST' : 'CLEAR'}
+							type="button"
+							className="p-4 data-[value='CLEAR']:bg-red-500 data-[value='BUST']:bg-orange-500 data-[value='CLEAR']:active:bg-red-400 data-[value='BUST']:active:bg-orange-400"
+						>
+							{score === '' ? 'BUST' : 'C'}
+						</button>
+
+						<KeyboardButton onClick={handleClick} value="0" />
+
+						<button type="submit" name="intent" value="add_score" className="p-4 bg-green-600">
+							OK
+						</button>
+
+						<DartsUsedRadioButton id="3" value={3} />
+					</div>
+				</AddScoreForm>
+			</main>
 		</div>
 	);
 }
 
-function CurrentPlayerScore(props) {
-	let { game, playerId } = props;
-
-	let leg = game.legs[game.legs.length - 1];
-	if (leg == undefined || leg.winnerId != undefined) return game.score;
-
-	let playerThrows = leg.throws.filter((t) => t.playerId === playerId);
-	let throwed = playerThrows.reduce((acc, t) => acc + t.score, 0);
-
-	let remaining = game.score - throwed;
-
-	return <span>{remaining}</span>;
-}
-
-function useThrowerId(game) {
-	let leg = game.legs[game.legs.length - 1];
-	if (leg == undefined || leg.winnerId != undefined) return game.playerIds[0];
-
-	let lastThrow = leg.throws[leg.throws.length - 1];
-	let lastThrowerId = lastThrow?.playerId;
-
+function getThrowerId(game) {
 	let playerIds = game.playerIds;
-	let throwerId;
-	if (lastThrowerId == undefined) {
-		throwerId = playerIds[0];
+
+	let currentLeg = game.legs[game.legs.length - 1];
+	if (currentLeg == undefined) return playerIds[0]; // First player to start the game
+
+	let lastThrowerId;
+	if (currentLeg.throws.length === 0) {
+		// First throw of a new leg so we need to check the starter of the previous leg
+		let previousLeg = game.legs[game.legs.length - 2];
+		if (previousLeg == undefined) return playerIds[0];
+
+		let firstThrowOfTheLeg = previousLeg.throws[0];
+		if (firstThrowOfTheLeg == undefined) return playerIds[0];
+		lastThrowerId = firstThrowOfTheLeg?.playerId;
+	} else if (currentLeg.winnerId != undefined) {
+		let firstThrowOfTheLeg = currentLeg.throws[0];
+		if (firstThrowOfTheLeg == undefined) return playerIds[0];
+		lastThrowerId = firstThrowOfTheLeg?.playerId;
 	} else {
-		throwerId = playerIds[(playerIds.indexOf(lastThrowerId) + 1) % playerIds.length];
+		lastThrowerId = currentLeg.throws[currentLeg.throws.length - 1].playerId;
 	}
 
-	return throwerId;
+	return playerIds[(playerIds.indexOf(lastThrowerId) + 1) % playerIds.length];
 }

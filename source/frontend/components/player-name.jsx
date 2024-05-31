@@ -7,5 +7,5 @@ export default function PlayerName(props) {
 	let { id } = props;
 	let player = useFind(db, 'players', id);
 
-	return <>{player?.name ?? id}</>;
+	return <span>{player?.name ?? id}</span>;
 }

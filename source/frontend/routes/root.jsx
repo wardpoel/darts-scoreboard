@@ -9,10 +9,10 @@ const GAME_SCORE = {
 	501: 501,
 };
 
-const CHECKOUT_TYPES = {
-	single: 'SINGLE',
-	double: 'DOUBLE',
-	triple: 'TRIPLE',
+export const CHECKOUT_TYPE = {
+	single: 'Single',
+	double: 'Double',
+	triple: 'Triple',
 };
 
 export async function rootActions({ data }) {
@@ -30,8 +30,8 @@ export async function rootActions({ data }) {
 			playerIds,
 			legs: [],
 			score: GAME_SCORE[170],
-			checkout: CHECKOUT_TYPES.double,
-			startedAt: new Date().getTime(),
+			checkout: CHECKOUT_TYPE.double,
+			startedAt: Date.now(),
 		});
 
 		return Response.redirect(`/games/${game.id}`, 303);
@@ -39,5 +39,5 @@ export async function rootActions({ data }) {
 }
 
 export default function Root(props) {
-	return <div className="p-4">{props.children}</div>;
+	return <div className="max-w-screen-sm bg-gray-800 text-white mx-auto w-full h-full">{props.children}</div>;
 }
