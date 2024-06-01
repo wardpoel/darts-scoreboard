@@ -127,7 +127,7 @@ export default function Game() {
 							{game.score} {game.checkout} out
 						</span>
 					</span>
-					<span className="font-light text-blue-100">{DateTimeFormat.format(new Date(game.startedAt))}</span>
+					<span className="text-sm font-light text-blue-100">{DateTimeFormat.format(new Date(game.startedAt))}</span>
 				</h1>
 			</Header>
 
