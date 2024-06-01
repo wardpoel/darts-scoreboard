@@ -1,13 +1,16 @@
-import { useSelect } from 'key-value-database';
 import React from 'react';
-import { Link, useForm } from 'react-sprout';
+import { Link, useForm, useLoaderResult } from 'react-sprout';
 import db from '../database';
 import Header from '../components/header';
 import BackIcon from '../components/icons/back-icon';
 
+export async function newLoader() {
+	return db.select('players');
+}
+
 export default function New() {
+	let players = useLoaderResult();
 	let [NewGameForm] = useForm();
-	let players = useSelect(db, 'players');
 
 	return (
 		<div className="h-full grid grid-rows-[max-content,auto]">

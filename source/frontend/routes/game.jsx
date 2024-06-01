@@ -1,9 +1,8 @@
-import React, { useRef, useState } from 'react';
-import { Link, useForm, useParams } from 'react-sprout';
-import { useFind } from 'key-value-database';
+import React, { useEffect, useRef, useState } from 'react';
+import { Link, useForm, useLoaderResult } from 'react-sprout';
 
 import db from '../database';
-import { NotFoundError } from 'http-errors';
+import { BadRequestError, NotFoundError } from 'http-errors';
 import Header from '../components/header';
 import PlayerName from '../components/player-name';
 import checkouts from '../checkouts';
@@ -22,29 +21,48 @@ export async function gameActions({ data, params }) {
 		let game = db.find('games', gameId);
 		if (game == undefined) throw new NotFoundError('Game not found');
 
+		let gamePlayers = db.select('game_players', { gameId: game.id });
+		let players = gamePlayers.map((gp) => ({ id: gp.playerId }));
+
 		// get current leg
-		let leg = game.legs[game.legs.length - 1];
-		if (leg == undefined || leg.winnerId != undefined) {
-			game.legs.push({ winnerId: null, throws: [] });
-			leg = game.legs[game.legs.length - 1];
+		let allLegs = db.select('legs', { gameId: game.id });
+		let legs = allLegs.slice(-2); // Get the last 2 legs
+		let currentLeg = legs[legs.length - 1];
+		if (currentLeg == undefined || currentLeg.winnerId != undefined) {
+			let newLeg = db.create('legs', { gameId: game.id, createdAt: Date.now() });
+			legs.push(newLeg);
 		}
 
-		let throwerId = getThrowerId(game);
+		// Add throws to the legs
+		for (let leg of legs) {
+			let throws = db.select('throws', { legId: leg.id });
+			leg.throws = throws;
+		}
+
+		let throwerId = getThrowerId(players, legs);
+
+		let leg = legs[legs.length - 1];
+		let throwerThrows = leg.throws.filter((t) => t.playerId === throwerId);
+		let totalScore = throwerThrows.reduce((acc, t) => acc + t.score, 0);
 
 		// add the score to the leg
 		let score = parseInt(data.score);
 		let darts = parseInt(data.darts);
-
-		let throwerThrows = leg.throws.filter((t) => t.playerId === throwerId);
-		let totalScore = throwerThrows.reduce((acc, t) => acc + t.score, 0);
+		if (data.invert === 'true') {
+			if (isNaN(score)) throw new BadRequestError('Invalid score');
+			// The score that comes in, is the score the player will have after the throw
+			score = game.score - totalScore - score;
+			if (score < 0) throw new BadRequestError('Invalid score');
+		} else if (isNaN(score)) {
+			score = 0;
+		}
 
 		// check if the score is valid
-		if (totalScore + score > game.score) throw new Error('Score exceeds the game score'); // bust
+		if (totalScore + score > game.score) throw new BadRequestError('Invalid score'); // bust
 		if (game.checkout === CHECKOUT_TYPE.double && score === game.score - 1) {
-			throw new Error('Score exceeds the game score'); // bust (double checkout)
-		}
-		if (game.checkout === CHECKOUT_TYPE.triple && score === game.score - 2) {
-			throw new Error('Score exceeds the game score'); // bust (triple checkout)
+			throw new BadRequestError('Invalid score'); // bust (double checkout)
+		} else if (game.checkout === CHECKOUT_TYPE.triple && score === game.score - 2) {
+			throw new BadRequestError('Invalid score'); // bust (triple checkout)
 		}
 
 		let isFinish = totalScore + score === game.score;
@@ -53,25 +71,65 @@ export async function gameActions({ data, params }) {
 			// double -> score % 2 === 0 must be throw with at least 2 darts
 		}
 
-		leg.throws.push({ playerId: throwerId, score, darts });
+		db.create('throws', { legId: leg.id, playerId: throwerId, score, darts, createdAt: Date.now() });
 
 		// check if the leg is over
-		if (isFinish) leg.winnerId = throwerId;
-
-		// update the game
-		db.update('games', game.id, game);
+		if (isFinish) {
+			db.update('legs', leg.id, { id: leg.id, gameId: game.id, winnerId: throwerId, createdAt: leg.createdAt });
+		}
 	} else if (intent === 'undo_score') {
 		let game = db.find('games', gameId);
 		if (game == undefined) throw new NotFoundError('Game not found');
 
-		let leg = game.legs[game.legs.length - 1];
-		if (leg == undefined || leg.winnerId != undefined) throw new Error('No throws to undo');
+		let legs = db.select('legs', { gameId: game.id });
+		let leg = legs[legs.length - 1];
+		if (leg == undefined) throw new Error('No throws to undo');
 
-		let lastThrow = leg.throws.pop();
+		let throws = db.select('throws', { legId: leg.id });
+		if (throws.length === 0) {
+			db.delete('legs', leg.id);
+			leg = legs[legs.length - 2];
+			throws = db.select('throws', { legId: leg.id });
+		}
+
+		let lastThrow = throws.pop();
 		if (lastThrow == undefined) throw new Error('No throws to undo');
 
-		db.update('games', game.id, game);
+		db.delete('throws', lastThrow.id);
+		if (leg.winnerId != undefined) db.update('legs', leg.id, { ...leg, winnerId: undefined });
 	}
+}
+
+export async function gameLoader(request) {
+	let { gameId } = request.params;
+
+	let game = db.find('games', gameId);
+	if (game == undefined) throw new NotFoundError('Game not found');
+
+	let gamePlayers = db.select('game_players', { gameId: game.id });
+	let players = [];
+	for (let gamePlayer of gamePlayers) {
+		let player = db.find('players', gamePlayer.playerId);
+		if (player == undefined) continue;
+
+		players.push(player);
+	}
+
+	let legs = [];
+	let gameLegs = db.select('legs', { gameId: game.id });
+	for (let leg of gameLegs) {
+		let throws = db.select('throws', { legId: leg.id });
+		legs.push({ ...leg, throws });
+	}
+
+	// Calculate current thrower
+	let throwerId = getThrowerId(players, legs);
+	return {
+		...game,
+		legs,
+		players,
+		throwerId,
+	};
 }
 
 const DateTimeFormat = new Intl.DateTimeFormat('nl-BE', {
@@ -82,17 +140,68 @@ const DateTimeFormat = new Intl.DateTimeFormat('nl-BE', {
 	minute: 'numeric',
 });
 
-export default function Game() {
-	let { gameId } = useParams();
-	let game = useFind(db, 'games', gameId);
-	if (game == undefined) throw new NotFoundError('Game not found');
+function useStayAwake() {
+	useEffect(() => {
+		let wakeLock;
+		async function run() {
+			try {
+				wakeLock = await navigator.wakeLock.request('screen');
+			} catch (err) {
+				// noop
+			}
+		}
 
-	let throwerId = getThrowerId(game);
+		run();
+
+		return () => {
+			wakeLock?.release();
+		};
+	}, []);
+}
+
+export default function Game() {
+	let game = useLoaderResult();
+	let { throwerId } = game;
 
 	let scoreFormRef = useRef();
+	let submitButtonRef = useRef();
 	let [AddScoreForm] = useForm();
 	let [UndoScoreForm] = useForm();
+
 	let [score, setScore] = useState('');
+
+	useStayAwake();
+
+	useEffect(() => {
+		let element = submitButtonRef.current;
+		if (element == undefined) return;
+
+		let time;
+		function track() {
+			time = Date.now();
+			setTimeout(() => {
+				if (time == undefined) return;
+				let currentTime = Date.now();
+				if (currentTime - time >= 500) {
+					scoreFormRef.current.invert.value = true;
+					submitButtonRef.current.click();
+					time = undefined;
+				}
+			}, 500);
+		}
+
+		function clear() {
+			time = undefined;
+		}
+
+		element.addEventListener('mousedown', track);
+		element.addEventListener('mouseup', clear);
+
+		return () => {
+			element.removeEventListener('mousedown', track);
+			element.removeEventListener('mouseup', clear);
+		};
+	}, [submitButtonRef]);
 
 	function handleClick(event) {
 		let value = event.target.getAttribute('data-value');
@@ -108,7 +217,7 @@ export default function Game() {
 			return;
 		}
 
-		let newValue = `${currentValue}${value}`;
+		let newValue = currentValue === 'BUST' ? value : `${currentValue}${value}`;
 		let parsedNewValue = parseInt(newValue, 10);
 		if (parsedNewValue > 180) return;
 
@@ -127,14 +236,16 @@ export default function Game() {
 							{game.score} {game.checkout} out
 						</span>
 					</span>
-					<span className="text-sm font-light text-blue-100">{DateTimeFormat.format(new Date(game.startedAt))}</span>
+					<span className="text-sm font-light text-blue-100">{DateTimeFormat.format(new Date(game.createdAt))}</span>
 				</h1>
 			</Header>
 
 			<main className="grid grid-rows-[auto,max-content]">
 				<ul className="grid grid-cols-2">
-					{game.playerIds.map((playerId) => {
-						let legs = game.legs ?? [];
+					{game.players.map((player) => {
+						let playerId = player.id;
+						let { legs } = game;
+
 						let playerThrows = legs.flatMap((l) => l.throws).filter((t) => t.playerId === playerId);
 						let leg = game.legs[game.legs.length - 1];
 
@@ -170,7 +281,7 @@ export default function Game() {
 											<PlayerName id={playerId} />
 										</span>
 										<span>({dartsThrown})</span>
-										<span className="group-data-[thrower=true]:inline hidden mx-1">🎯</span>
+										<span className="group-data-[thrower=true]:inline hidden mx-1 text-sm">🎯</span>
 									</div>
 
 									<span className="bg-violet-500 p-4 -my-4 group-odd:-mr-4 group-even:-ml-4 text-white">{legsWon}</span>
@@ -204,13 +315,7 @@ export default function Game() {
 										className="group-data-[thrower=true]:hidden flex justify-between text-gray-400 items-center gap-2 bg-gray-700 p-4"
 									>
 										<span>Last: {lastPlayerScore ?? 0}</span>
-										<button
-											type="submit"
-											name="intent"
-											disabled={lastPlayerScore == undefined}
-											value="undo_score"
-											className="p-0.5 disabled:text-gray-500"
-										>
+										<button type="submit" name="intent" value="undo_score" className="p-0.5 disabled:text-gray-500">
 											<UndoIcon className="size-7" />
 										</button>
 									</UndoScoreForm>
@@ -223,17 +328,25 @@ export default function Game() {
 				<AddScoreForm
 					ref={scoreFormRef}
 					method="post"
-					onNavigateEnd={() => {
+					onNavigate={(event) => {
+						if (score !== '') return;
+						event.preventDefault();
+					}}
+					onNavigateEnd={(event) => {
 						setScore('');
-						scoreFormRef.current.reset();
+						event.originalEvent.target.reset();
+					}}
+					onActionError={(event, error) => {
+						alert(error.message);
 					}}
 				>
 					<input name="score" type="text" required hidden readOnly value={score} />
+					<input name="invert" type="text" required hidden readOnly defaultValue={false} />
 
 					<div className="grid grid-cols-[repeat(3,minmax(0,1fr)),min-content] gap-px text-center text-3xl">
-						<KeyboardButton onClick={handleClick} value="7" />
-						<KeyboardButton onClick={handleClick} value="8" />
-						<KeyboardButton onClick={handleClick} value="9" />
+						<KeyboardButton onClick={handleClick} value="1" />
+						<KeyboardButton onClick={handleClick} value="2" />
+						<KeyboardButton onClick={handleClick} value="3" />
 
 						<span className="text-sm p-4 text-gray-300">Darts used</span>
 
@@ -243,9 +356,9 @@ export default function Game() {
 
 						<DartsUsedRadioButton id="1" value={1} />
 
-						<KeyboardButton onClick={handleClick} value="1" />
-						<KeyboardButton onClick={handleClick} value="2" />
-						<KeyboardButton onClick={handleClick} value="3" />
+						<KeyboardButton onClick={handleClick} value="7" />
+						<KeyboardButton onClick={handleClick} value="8" />
+						<KeyboardButton onClick={handleClick} value="9" />
 
 						<DartsUsedRadioButton id="2" value={2} />
 
@@ -253,14 +366,14 @@ export default function Game() {
 							onClick={handleClick}
 							data-value={score === '' ? 'BUST' : 'CLEAR'}
 							type="button"
-							className="p-4 data-[value='CLEAR']:bg-red-500 data-[value='BUST']:bg-orange-500 data-[value='CLEAR']:active:bg-red-400 data-[value='BUST']:active:bg-orange-400"
+							className="p-4 data-[value='CLEAR']:bg-red-500 data-[value='BUST']:bg-orange-500"
 						>
 							{score === '' ? 'BUST' : 'C'}
 						</button>
 
 						<KeyboardButton onClick={handleClick} value="0" />
 
-						<button type="submit" name="intent" value="add_score" className="p-4 bg-green-600">
+						<button ref={submitButtonRef} type="submit" name="intent" value="add_score" className="p-4 bg-green-600">
 							OK
 						</button>
 
@@ -272,16 +385,16 @@ export default function Game() {
 	);
 }
 
-function getThrowerId(game) {
-	let playerIds = game.playerIds;
+function getThrowerId(players, legs) {
+	let playerIds = players.map((p) => p.id);
 
-	let currentLeg = game.legs[game.legs.length - 1];
+	let currentLeg = legs[legs.length - 1];
 	if (currentLeg == undefined) return playerIds[0]; // First player to start the game
 
 	let lastThrowerId;
 	if (currentLeg.throws.length === 0) {
 		// First throw of a new leg so we need to check the starter of the previous leg
-		let previousLeg = game.legs[game.legs.length - 2];
+		let previousLeg = legs[legs.length - 2];
 		if (previousLeg == undefined) return playerIds[0];
 
 		let firstThrowOfTheLeg = previousLeg.throws[0];

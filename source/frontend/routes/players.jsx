@@ -2,8 +2,7 @@ import React, { useRef } from 'react';
 
 import { NotImplementedError } from 'http-errors';
 import db from '../database';
-import { useSelect } from 'key-value-database';
-import { Link, useForm } from 'react-sprout';
+import { Link, useForm, useLoaderResult } from 'react-sprout';
 import Header from '../components/header';
 import BackIcon from '../components/icons/back-icon';
 import PlayerName from '../components/player-name';
@@ -26,8 +25,12 @@ export async function playerActions({ data }) {
 	throw new NotImplementedError(`Unknown intent: ${intent} not known`);
 }
 
+export async function playerLoaders() {
+	return db.select('players');
+}
+
 export default function Players() {
-	let players = useSelect(db, 'players');
+	let players = useLoaderResult();
 	let [AddPlayerForm] = useForm();
 	let addPlayerFormRef = useRef();
 
