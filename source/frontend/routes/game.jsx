@@ -57,18 +57,18 @@ export async function gameActions({ data, params }) {
 			score = 0;
 		}
 
+		const left = game.score - (totalScore + score);
+
 		// check if the score is valid
 		if (totalScore + score > game.score) throw new BadRequestError('Invalid score'); // bust
-		if (game.checkout === CHECKOUT_TYPE.double && score === game.score - 1) {
-			throw new BadRequestError('Invalid score'); // bust (double checkout)
-		} else if (game.checkout === CHECKOUT_TYPE.triple && score === game.score - 2) {
-			throw new BadRequestError('Invalid score'); // bust (triple checkout)
-		}
 
-		let isFinish = totalScore + score === game.score;
-		if (isFinish) {
-			// TODO: add checks for double and triple checkout
-			// double -> score % 2 === 0 must be throw with at least 2 darts
+		let isFinish = left === 0;
+		if (!isFinish) {
+			if (game.checkout === CHECKOUT_TYPE.double && left < 2) {
+				throw new BadRequestError('Invalid score'); // bust (double checkout)
+			} else if (game.checkout === CHECKOUT_TYPE.triple && left < 3) {
+				throw new BadRequestError('Invalid score'); // bust (triple checkout)
+			}
 		}
 
 		db.create('throws', { legId: leg.id, playerId: throwerId, score, darts, createdAt: Date.now() });
@@ -186,6 +186,7 @@ export default function Game() {
 
 		function clear() {
 			clearTimeout(timeout);
+			scoreFormRef.current.invert.value = false;
 		}
 
 		element.addEventListener('pointerdown', track);
@@ -332,6 +333,7 @@ export default function Game() {
 					}}
 					onActionError={(event, error) => {
 						alert(error.message);
+						event.originalEvent.target.reset();
 					}}
 				>
 					<input name="score" type="text" required hidden readOnly value={score} />
