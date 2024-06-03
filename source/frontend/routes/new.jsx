@@ -13,7 +13,7 @@ export default function New() {
 	let [NewGameForm] = useForm();
 
 	return (
-		<div className="h-full grid grid-rows-[max-content,auto]">
+		<div className="grid h-full grid-rows-[max-content,auto]">
 			<Header>
 				<h1 className="flex items-center gap-4">
 					<Link href=".." push={false}>
@@ -23,9 +23,9 @@ export default function New() {
 				</h1>
 			</Header>
 
-			<NewGameForm action="/" method="post" className="h-full p-4 gap-4 grid grid-rows-[minmax(0,1fr),max-content]">
-				<ul className="grid grid-cols-2 self-y-start gap-4">
-					{players.map((player) => (
+			<NewGameForm action="/" method="post" className="grid h-full grid-rows-[minmax(0,1fr),max-content] gap-4 p-4">
+				<ul className="grid grid-cols-2 gap-4 self-y-start">
+					{players.map(player => (
 						<li key={player.id}>
 							<input
 								hidden
@@ -43,7 +43,7 @@ export default function New() {
 					))}
 				</ul>
 
-				<button type="submit" name="intent" value="start_game" className="bg-blue-500 p-4 rounded-md text-2xl">
+				<button type="submit" name="intent" value="start_game" className="rounded-md bg-blue-500 p-4 text-2xl">
 					Start
 				</button>
 			</NewGameForm>

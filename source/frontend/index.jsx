@@ -8,5 +8,5 @@ let root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
 	<React.StrictMode>
 		<Router dataTransform={entriesToObject} />
-	</React.StrictMode>
+	</React.StrictMode>,
 );

@@ -22,7 +22,7 @@ export async function gameActions({ data, params }) {
 		if (game == undefined) throw new NotFoundError('Game not found');
 
 		let gamePlayers = db.select('game_players', { gameId: game.id });
-		let players = gamePlayers.map((gp) => ({ id: gp.playerId }));
+		let players = gamePlayers.map(gp => ({ id: gp.playerId }));
 
 		// get current leg
 		let allLegs = db.select('legs', { gameId: game.id });
@@ -42,7 +42,7 @@ export async function gameActions({ data, params }) {
 		let throwerId = getThrowerId(players, legs);
 
 		let leg = legs[legs.length - 1];
-		let throwerThrows = leg.throws.filter((t) => t.playerId === throwerId);
+		let throwerThrows = leg.throws.filter(t => t.playerId === throwerId);
 		let totalScore = throwerThrows.reduce((acc, t) => acc + t.score, 0);
 
 		// add the score to the leg
@@ -219,7 +219,7 @@ export default function Game() {
 	}
 
 	return (
-		<div className="grid grid-rows-[max-content,auto] h-full">
+		<div className="grid h-full grid-rows-[max-content,auto]">
 			<Header>
 				<h1 className="flex items-center justify-between">
 					<span className="flex items-center gap-4">
@@ -236,21 +236,21 @@ export default function Game() {
 
 			<main className="grid grid-rows-[auto,max-content]">
 				<ul className="grid grid-cols-2">
-					{game.players.map((player) => {
+					{game.players.map(player => {
 						let playerId = player.id;
 						let { legs } = game;
 
-						let playerThrows = legs.flatMap((l) => l.throws).filter((t) => t.playerId === playerId);
+						let playerThrows = legs.flatMap(l => l.throws).filter(t => t.playerId === playerId);
 						let leg = game.legs[game.legs.length - 1];
 
-						let legsWon = legs.filter((l) => l.winnerId === playerId).length;
+						let legsWon = legs.filter(l => l.winnerId === playerId).length;
 
 						let legAverage = 0;
 						let dartsThrown = 0;
 						let legTotalScore = 0;
 						let lastPlayerScore;
 						if (leg != undefined && leg.winnerId == undefined) {
-							let legPlayerThrows = leg.throws.filter((t) => t.playerId === playerId);
+							let legPlayerThrows = leg.throws.filter(t => t.playerId === playerId);
 							dartsThrown = legPlayerThrows.reduce((acc, t) => acc + t.darts, 0);
 							legTotalScore = legPlayerThrows.reduce((acc, t) => acc + t.score, 0);
 							lastPlayerScore = legPlayerThrows[legPlayerThrows.length - 1]?.score;
@@ -269,27 +269,27 @@ export default function Game() {
 								data-thrower={throwerId === playerId}
 								className="group grid grid-rows-[max-content,max-content,minmax(min-content,1fr)] text-gray-400 data-[thrower=true]:text-white"
 							>
-								<div className="px-4 py-4 font-semibold text-lg flex gap-1 items-center justify-between group-even:flex-row-reverse">
-									<div className="group-even:flex-row-reverse truncate flex items-center gap-1">
-										<span className="group-even:flex-grow truncate">
+								<div className="flex items-center justify-between gap-1 px-4 py-4 text-lg font-semibold group-even:flex-row-reverse">
+									<div className="flex items-center gap-1 truncate group-even:flex-row-reverse">
+										<span className="truncate group-even:flex-grow">
 											<PlayerName id={playerId} />
 										</span>
 										<span>({dartsThrown})</span>
-										<span className="group-data-[thrower=true]:inline hidden mx-1 text-sm">🎯</span>
+										<span className="mx-1 hidden text-sm group-data-[thrower=true]:inline">🎯</span>
 									</div>
 
-									<span className="bg-violet-500 p-4 -my-4 group-odd:-mr-4 group-even:-ml-4 text-white">{legsWon}</span>
+									<span className="-my-4 bg-violet-500 p-4 text-white group-odd:-mr-4 group-even:-ml-4">{legsWon}</span>
 								</div>
 
-								<div className="py-4 bg-gray-700 justify-center inline-flex gap-1 items-center">
+								<div className="inline-flex items-center justify-center gap-1 bg-gray-700 py-4">
 									<span>ma: {matchAverage}</span>
 									<span>•</span>
 									<span>la: {legAverage}</span>
 								</div>
 
 								<div className="flex flex-col items-center self-y-center">
-									<div className="font-medium text-[5.5rem] leading-none sm:text-8xl">{remaining}</div>
-									<div className="gap-3 justify-center font-light mt-3 text-[1.75rem] leading-none flex">
+									<div className="text-[5.5rem] font-medium leading-none sm:text-8xl">{remaining}</div>
+									<div className="mt-3 flex justify-center gap-3 text-[1.75rem] font-light leading-none">
 										{checkout?.map((c, i) => (
 											<span key={i}>{c}</span>
 										))}
@@ -299,14 +299,14 @@ export default function Game() {
 								<div className="text-2xl">
 									<div
 										data-score={score !== ''}
-										className="p-4 data-[score=true]:text-gray-800 bg-white text-gray-400 group-data-[thrower=false]:hidden"
+										className="bg-white p-4 text-center text-gray-400 data-[score=true]:text-gray-800 group-data-[thrower=false]:hidden"
 									>
 										{score === '' ? 'Enter score' : score}
 									</div>
 
 									<UndoScoreForm
 										method="post"
-										className="group-data-[thrower=true]:hidden flex justify-between text-gray-400 items-center gap-2 bg-gray-700 p-4"
+										className="flex items-center justify-between gap-2 bg-gray-700 p-4 text-gray-400 group-data-[thrower=true]:hidden"
 									>
 										<span>Last: {lastPlayerScore ?? 0}</span>
 										<button type="submit" name="intent" value="undo_score" className="p-0.5 disabled:text-gray-500">
@@ -322,11 +322,11 @@ export default function Game() {
 				<AddScoreForm
 					ref={scoreFormRef}
 					method="post"
-					onNavigate={(event) => {
+					onNavigate={event => {
 						if (score !== '') return;
 						event.preventDefault();
 					}}
-					onNavigateEnd={(event) => {
+					onNavigateEnd={event => {
 						setScore('');
 						event.originalEvent.target.reset();
 					}}
@@ -342,7 +342,7 @@ export default function Game() {
 						<KeyboardButton onClick={handleClick} value="2" />
 						<KeyboardButton onClick={handleClick} value="3" />
 
-						<span className="text-sm p-4 text-gray-300">Darts used</span>
+						<span className="p-4 text-sm text-gray-300">Darts used</span>
 
 						<KeyboardButton onClick={handleClick} value="4" />
 						<KeyboardButton onClick={handleClick} value="5" />
@@ -360,14 +360,14 @@ export default function Game() {
 							onClick={handleClick}
 							data-value={score === '' ? 'BUST' : 'CLEAR'}
 							type="button"
-							className="p-4 data-[value='CLEAR']:bg-red-500 data-[value='BUST']:bg-orange-500"
+							className="p-4 data-[value='BUST']:bg-orange-500 data-[value='CLEAR']:bg-red-500"
 						>
 							{score === '' ? 'BUST' : 'C'}
 						</button>
 
 						<KeyboardButton onClick={handleClick} value="0" />
 
-						<button ref={submitButtonRef} type="submit" name="intent" value="add_score" className="p-4 bg-green-600">
+						<button ref={submitButtonRef} type="submit" name="intent" value="add_score" className="bg-green-600 p-4">
 							OK
 						</button>
 
@@ -380,7 +380,7 @@ export default function Game() {
 }
 
 function getThrowerId(players, legs) {
-	let playerIds = players.map((p) => p.id);
+	let playerIds = players.map(p => p.id);
 
 	let currentLeg = legs[legs.length - 1];
 	if (currentLeg == undefined) return playerIds[0]; // First player to start the game

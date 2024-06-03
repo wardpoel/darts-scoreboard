@@ -43,5 +43,5 @@ export async function rootActions({ data }) {
 }
 
 export default function Root(props) {
-	return <div className="max-w-screen-sm bg-gray-800 text-white mx-auto w-full h-full">{props.children}</div>;
+	return <div className="mx-auto h-full w-full max-w-screen-sm bg-gray-800 text-white">{props.children}</div>;
 }

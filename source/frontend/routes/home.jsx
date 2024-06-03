@@ -4,18 +4,18 @@ import Header from '../components/header';
 
 export default function Home() {
 	return (
-		<div className="grid grid-rows-[max-content,auto] h-full">
+		<div className="grid h-full grid-rows-[max-content,auto]">
 			<Header>
 				<h1>Darts Scoreboard</h1>
 			</Header>
-			<div className="px-4 self-y-center grid grid-rows-3 gap-4">
-				<Link href="new" className="p-4 bg-blue-500 text-center text-2xl rounded-md">
+			<div className="grid grid-rows-3 gap-4 px-4 self-y-center">
+				<Link href="new" className="rounded-md bg-blue-500 p-4 text-center text-2xl">
 					New game
 				</Link>
-				<Link href="games" className="p-4 bg-blue-500 text-center text-2xl rounded-md">
+				<Link href="games" className="rounded-md bg-blue-500 p-4 text-center text-2xl">
 					Games
 				</Link>
-				<Link href="players" className="p-4 bg-blue-500 text-center text-2xl rounded-md">
+				<Link href="players" className="rounded-md bg-blue-500 p-4 text-center text-2xl">
 					Players
 				</Link>
 			</div>

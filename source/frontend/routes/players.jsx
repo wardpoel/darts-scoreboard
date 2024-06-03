@@ -35,7 +35,7 @@ export default function Players() {
 	let addPlayerFormRef = useRef();
 
 	return (
-		<div className="grid grid-rows-[max-content,auto] h-full">
+		<div className="grid h-full grid-rows-[max-content,auto]">
 			<Header>
 				<h1 className="flex items-center gap-4">
 					<Link href=".." push={false}>
@@ -45,9 +45,9 @@ export default function Players() {
 				</h1>
 			</Header>
 
-			<div className="h-full grid grid-rows-[minmax(0,1fr),max-content] grid-cols-1 overflow-y-auto">
-				<ul className="py-1 self-y-start grid grid-cols-1 divide-y divide-gray-700 max-h-full overflow-y-auto">
-					{players.map((player) => (
+			<div className="grid h-full grid-cols-1 grid-rows-[minmax(0,1fr),max-content] overflow-y-auto">
+				<ul className="grid max-h-full grid-cols-1 divide-y divide-gray-700 overflow-y-auto py-1 self-y-start">
+					{players.map(player => (
 						<PlayerListItem key={player.id} id={player.id} />
 					))}
 				</ul>
@@ -56,7 +56,7 @@ export default function Players() {
 					ref={addPlayerFormRef}
 					action="/players"
 					method="post"
-					className="p-4 flex flex-col gap-2"
+					className="flex flex-col gap-2 p-4"
 					onNavigateEnd={() => addPlayerFormRef.current.reset()}
 				>
 					<input
@@ -70,7 +70,7 @@ export default function Players() {
 						type="submit"
 						name="intent"
 						value="add_player"
-						className="bg-blue-500 flex-shrink-0 text-center text-2xl rounded-md p-4"
+						className="flex-shrink-0 rounded-md bg-blue-500 p-4 text-center text-2xl"
 					>
 						Add
 					</button>
@@ -84,7 +84,7 @@ function PlayerListItem(props) {
 	let { id } = props;
 	return (
 		<li>
-			<Link href={id} className="block px-4 py-3 active:bg-gray-700 text-lg">
+			<Link href={id} className="block px-4 py-3 text-lg active:bg-gray-700">
 				<PlayerName id={id} />
 			</Link>
 		</li>

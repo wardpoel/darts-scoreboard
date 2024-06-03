@@ -22,7 +22,7 @@ export default function Games() {
 			</Header>
 
 			<ul className="grid grid-cols-1 gap-2 p-4">
-				{games.map((game) => (
+				{games.map(game => (
 					<li key={game.id}>
 						<Link href={game.id}>Game: {game.id}</Link>
 					</li>

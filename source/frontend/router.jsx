@@ -19,5 +19,5 @@ export default Routes(
 
 		<Players path="players" loader={playerLoaders} action={playerActions} />
 		<Player path="players/:playerId" loader={playerLoader} />
-	</Root>
+	</Root>,
 );
