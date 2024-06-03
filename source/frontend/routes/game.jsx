@@ -176,30 +176,24 @@ export default function Game() {
 		let element = submitButtonRef.current;
 		if (element == undefined) return;
 
-		let time;
+		let timeout;
 		function track() {
-			time = Date.now();
-			setTimeout(() => {
-				if (time == undefined) return;
-				let currentTime = Date.now();
-				if (currentTime - time >= 500) {
-					scoreFormRef.current.invert.value = true;
-					submitButtonRef.current.click();
-					time = undefined;
-				}
+			timeout = setTimeout(() => {
+				scoreFormRef.current.invert.value = true;
+				submitButtonRef.current.click();
 			}, 500);
 		}
 
 		function clear() {
-			time = undefined;
+			clearTimeout(timeout);
 		}
 
-		element.addEventListener('mousedown', track);
-		element.addEventListener('mouseup', clear);
+		element.addEventListener('pointerdown', track);
+		element.addEventListener('pointerup', clear);
 
 		return () => {
-			element.removeEventListener('mousedown', track);
-			element.removeEventListener('mouseup', clear);
+			element.removeEventListener('pointerdown', track);
+			element.removeEventListener('pointerup', clear);
 		};
 	}, [submitButtonRef]);
 
