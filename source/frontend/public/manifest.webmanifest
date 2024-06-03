@@ -1,0 +1,10 @@
+{
+	"name": "Darts Scoreboard",
+	"description": "Darts scoreboard app",
+	"start_url": "/",
+	"lang": "en-GB",
+	"theme_color": "#3b82f6",
+	"display": "standalone",
+	"background_color": "#1f2937",
+	"orientation": "landscape"
+}

@@ -8,9 +8,18 @@
 		<link rel="stylesheet" href="/index.css" />
 		<script src="/index.jsx" type="module" defer></script>
 
-		<link rel="manifest" href="/manifest.webmanifest" />
-		<meta name="msapplication-TileColor" content="#111827" />
+		<link rel="manifest" href="manifest.webmanifest" />
+
+		<meta name="mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="application-name" content="Darts Scoreboard" />
+		<meta name="apple-mobile-web-app-title" content="Darts Scoreboard" />
 		<meta name="theme-color" content="#3b82f6" />
+		<meta name="msapplication-navbutton-color" content="#3b82f6" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+		<meta name="msapplication-starturl" content="/" />
+
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
 		<script>
 			navigator.serviceWorker.register('/service-worker.js');
 		</script>
