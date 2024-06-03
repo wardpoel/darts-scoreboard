@@ -1,15 +1,16 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 
-import { useSelect } from 'key-value-database';
-import { Link } from 'react-sprout';
+import { Link, useLoaderResult } from 'react-sprout';
 
 import Header from '../components/header';
 import BackIcon from '../components/icons/back-icon';
 import db from '../database';
 
-export default function Games() {
-	let games = useSelect(db, 'games');
+export async function gamesLoader() {
+	return db.select('games');
+}
 
+export default function Games() {
 	return (
 		<div>
 			<Header>
@@ -21,13 +22,23 @@ export default function Games() {
 				</h1>
 			</Header>
 
-			<ul className="grid grid-cols-1 gap-2 p-4">
-				{games.map(game => (
-					<li key={game.id}>
-						<Link href={game.id}>Game: {game.id}</Link>
-					</li>
-				))}
-			</ul>
+			<Suspense>
+				<GamesView />
+			</Suspense>
 		</div>
+	);
+}
+
+function GamesView() {
+	let games = useLoaderResult();
+
+	return (
+		<ul className="grid grid-cols-1 gap-2 p-4">
+			{games.map(game => (
+				<li key={game.id}>
+					<Link href={game.id}>Game: {game.id}</Link>
+				</li>
+			))}
+		</ul>
 	);
 }

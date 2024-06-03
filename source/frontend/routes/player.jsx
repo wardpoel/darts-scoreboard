@@ -1,8 +1,9 @@
 import React from 'react';
 import Header from '../components/header';
-import { useForm, useLoaderResult } from 'react-sprout';
+import { Link, useForm, useLoaderResult } from 'react-sprout';
 import db from '../database';
 import { NotFoundError } from 'http-errors';
+import BackIcon from '../components/icons/back-icon';
 
 export async function playerLoader(request) {
 	let { params } = request;
@@ -19,7 +20,14 @@ export default function Player() {
 
 	return (
 		<div>
-			<Header>{player.name}</Header>
+			<Header>
+				<h1 className="flex items-center gap-4">
+					<Link href=".." push={false}>
+						<BackIcon className="size-7" />
+					</Link>
+					<span>{player.name}</span>
+				</h1>
+			</Header>
 
 			<DeletePlayerForm action="/players" method="post">
 				<input name="playerId" value={player.id} type="hidden" readOnly />

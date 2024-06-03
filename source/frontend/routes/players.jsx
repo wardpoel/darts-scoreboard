@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { Suspense } from 'react';
 
 import { NotImplementedError } from 'http-errors';
 import db from '../database';
@@ -30,10 +30,6 @@ export async function playerLoaders() {
 }
 
 export default function Players() {
-	let players = useLoaderResult();
-	let [AddPlayerForm] = useForm();
-	let addPlayerFormRef = useRef();
-
 	return (
 		<div className="grid h-full grid-rows-[max-content,auto]">
 			<Header>
@@ -45,37 +41,43 @@ export default function Players() {
 				</h1>
 			</Header>
 
-			<div className="grid h-full grid-cols-1 grid-rows-[minmax(0,1fr),max-content] overflow-y-auto">
-				<ul className="grid max-h-full grid-cols-1 divide-y divide-gray-700 overflow-y-auto py-1 self-y-start">
-					{players.map(player => (
-						<PlayerListItem key={player.id} id={player.id} />
-					))}
-				</ul>
+			<Suspense>
+				<PlayersView />
+			</Suspense>
+		</div>
+	);
+}
 
-				<AddPlayerForm
-					ref={addPlayerFormRef}
-					action="/players"
-					method="post"
-					className="flex flex-col gap-2 p-4"
-					onNavigateEnd={() => addPlayerFormRef.current.reset()}
+function PlayersView() {
+	let players = useLoaderResult();
+	let [AddPlayerForm] = useForm();
+
+	return (
+		<div className="grid h-full grid-cols-1 grid-rows-[minmax(0,1fr),max-content] overflow-y-auto">
+			<ul className="grid max-h-full grid-cols-1 divide-y divide-gray-700 overflow-y-auto py-1 self-y-start">
+				{players.map(player => (
+					<PlayerListItem key={player.id} id={player.id} />
+				))}
+			</ul>
+
+			<AddPlayerForm
+				action="/players"
+				method="post"
+				className="flex flex-col gap-2 p-4"
+				onNavigateEnd={event => {
+					event.originalEvent.target.reset();
+				}}
+			>
+				<input type="text" name="name" placeholder="Name" required className="rounded-md p-4 text-2xl text-gray-800" />
+				<button
+					type="submit"
+					name="intent"
+					value="add_player"
+					className="flex-shrink-0 rounded-md bg-blue-500 p-4 text-center text-2xl"
 				>
-					<input
-						type="text"
-						name="name"
-						placeholder="Name"
-						required
-						className="rounded-md p-4 text-2xl text-gray-800"
-					/>
-					<button
-						type="submit"
-						name="intent"
-						value="add_player"
-						className="flex-shrink-0 rounded-md bg-blue-500 p-4 text-center text-2xl"
-					>
-						Add
-					</button>
-				</AddPlayerForm>
-			</div>
+					Add
+				</button>
+			</AddPlayerForm>
 		</div>
 	);
 }
