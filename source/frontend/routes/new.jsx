@@ -1,8 +1,8 @@
 import React from 'react';
-import { Link, useForm, useLoaderResult } from 'react-sprout';
+import { useForm, useLoaderResult } from 'react-sprout';
 import db from '../database';
 import Header from '../components/header';
-import BackIcon from '../components/icons/back-icon';
+import BackButton from '../components/back-button';
 
 export async function newLoader() {
 	return db.select('players');
@@ -16,9 +16,7 @@ export default function New() {
 		<div className="grid h-full grid-rows-[max-content,auto]">
 			<Header>
 				<h1 className="flex items-center gap-4">
-					<Link href=".." push={false}>
-						<BackIcon className="size-7" />
-					</Link>
+					<BackButton />
 					<span>New game</span>
 				</h1>
 			</Header>

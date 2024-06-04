@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link, useForm, useLoaderResult } from 'react-sprout';
+import { useForm, useLoaderResult } from 'react-sprout';
 
 import db from '../database';
 import { BadRequestError, NotFoundError } from 'http-errors';
@@ -10,7 +10,7 @@ import { CHECKOUT_TYPE } from './root';
 import KeyboardButton from '../components/keyboard-button';
 import DartsUsedRadioButton from '../components/darts-used-radio-button';
 import UndoIcon from '../components/icons/undo-icon';
-import BackIcon from '../components/icons/back-icon';
+import BackButton from '../components/back-button';
 
 export async function gameActions({ data, params }) {
 	let { gameId } = params;
@@ -224,9 +224,7 @@ export default function Game() {
 			<Header>
 				<h1 className="flex items-center justify-between">
 					<span className="flex items-center gap-4">
-						<Link href=".." push={false}>
-							<BackIcon className="size-7" />
-						</Link>
+						<BackButton />
 						<span>
 							{game.score} {game.checkout} out
 						</span>
@@ -333,6 +331,7 @@ export default function Game() {
 					}}
 					onActionError={(event, error) => {
 						alert(error.message);
+						setScore('');
 						event.originalEvent.target.reset();
 					}}
 				>
@@ -360,6 +359,7 @@ export default function Game() {
 
 						<button
 							onClick={handleClick}
+							onTouchStart={handleClick}
 							data-value={score === '' ? 'BUST' : 'CLEAR'}
 							type="button"
 							className="p-4 data-[value='BUST']:bg-orange-500 data-[value='CLEAR']:bg-red-500"

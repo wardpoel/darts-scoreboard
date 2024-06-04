@@ -8,6 +8,8 @@ import Root, { rootActions } from './routes/root.jsx';
 import New, { newLoader } from './routes/new.jsx';
 import Player, { playerLoader } from './routes/player.jsx';
 
+export const historyLength = window.history.length;
+
 export default Routes(
 	<Root path="." action={rootActions}>
 		<Home path="/" />

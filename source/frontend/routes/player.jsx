@@ -1,9 +1,9 @@
 import React from 'react';
 import Header from '../components/header';
-import { Link, useForm, useLoaderResult } from 'react-sprout';
+import { useForm, useLoaderResult } from 'react-sprout';
 import db from '../database';
 import { NotFoundError } from 'http-errors';
-import BackIcon from '../components/icons/back-icon';
+import BackButton from '../components/back-button';
 
 export async function playerLoader(request) {
 	let { params } = request;
@@ -22,9 +22,7 @@ export default function Player() {
 		<div>
 			<Header>
 				<h1 className="flex items-center gap-4">
-					<Link href=".." push={false}>
-						<BackIcon className="size-7" />
-					</Link>
+					<BackButton />
 					<span>{player.name}</span>
 				</h1>
 			</Header>

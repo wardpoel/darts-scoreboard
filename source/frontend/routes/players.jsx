@@ -4,8 +4,8 @@ import { NotImplementedError } from 'http-errors';
 import db from '../database';
 import { Link, useForm, useLoaderResult } from 'react-sprout';
 import Header from '../components/header';
-import BackIcon from '../components/icons/back-icon';
 import PlayerName from '../components/player-name';
+import BackButton from '../components/back-button';
 
 export async function playerActions({ data }) {
 	let intent = data.intent;
@@ -34,9 +34,7 @@ export default function Players() {
 		<div className="grid h-full grid-rows-[max-content,auto]">
 			<Header>
 				<h1 className="flex items-center gap-4">
-					<Link href=".." push={false}>
-						<BackIcon className="size-7" />
-					</Link>
+					<BackButton />
 					<span>Players</span>
 				</h1>
 			</Header>
@@ -86,7 +84,7 @@ function PlayerListItem(props) {
 	let { id } = props;
 	return (
 		<li>
-			<Link href={id} className="block px-4 py-3 text-lg active:bg-gray-700">
+			<Link href={id} className="block px-4 py-3 text-lg active:bg-gray-700" cache>
 				<PlayerName id={id} />
 			</Link>
 		</li>
