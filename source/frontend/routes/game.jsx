@@ -359,7 +359,6 @@ export default function Game() {
 
 						<button
 							onClick={handleClick}
-							onTouchStart={handleClick}
 							data-value={score === '' ? 'BUST' : 'CLEAR'}
 							type="button"
 							className="p-4 data-[value='BUST']:bg-orange-500 data-[value='CLEAR']:bg-red-500"
