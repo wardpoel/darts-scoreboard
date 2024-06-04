@@ -2,7 +2,7 @@ import React from 'react';
 import Routes from 'react-sprout';
 import Home from './routes/home.jsx';
 import Game, { gameActions, gameLoader } from './routes/game.jsx';
-import Players, { playerActions, playerLoaders } from './routes/players.jsx';
+import Players, { playersActions, playersLoader } from './routes/players.jsx';
 import Games, { gamesLoader } from './routes/games.jsx';
 import Root, { rootActions } from './routes/root.jsx';
 import New, { newLoader } from './routes/new.jsx';
@@ -19,7 +19,7 @@ export default Routes(
 		<Games path="games" loader={gamesLoader} />
 		<Game path="games/:gameId" loader={gameLoader} action={gameActions} />
 
-		<Players path="players" loader={playerLoaders} action={playerActions} />
+		<Players path="players" loader={playersLoader} action={playersActions} />
 		<Player path="players/:playerId" loader={playerLoader} />
 	</Root>,
 );

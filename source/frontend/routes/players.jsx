@@ -7,7 +7,7 @@ import Header from '../components/header';
 import PlayerName from '../components/player-name';
 import BackButton from '../components/back-button';
 
-export async function playerActions({ data }) {
+export async function playersActions({ data }) {
 	let intent = data.intent;
 
 	if (intent === 'add_player') {
@@ -18,14 +18,14 @@ export async function playerActions({ data }) {
 
 	if (intent === 'delete_player') {
 		let playerId = data.playerId;
-		db.delete('players', playerId);
-		return;
+		let player = db.delete('players', playerId);
+		return player;
 	}
 
 	throw new NotImplementedError(`Unknown intent: ${intent} not known`);
 }
 
-export async function playerLoaders() {
+export async function playersLoader() {
 	return db.select('players');
 }
 

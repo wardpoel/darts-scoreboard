@@ -372,7 +372,7 @@ export default function Game() {
 							OK
 						</button>
 
-						<DartsUsedRadioButton id="3" value={3} />
+						<DartsUsedRadioButton id="3" value={3} defaultChecked />
 					</div>
 				</AddScoreForm>
 			</main>
