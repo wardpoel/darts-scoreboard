@@ -278,9 +278,9 @@ export default function Game() {
 									<span>la: {legAverage}</span>
 								</div>
 
-								<div className="flex flex-col items-center self-y-center">
-									<div className="text-[5.5rem] font-medium leading-none tracking-wider sm:text-8xl">{remaining}</div>
-									<div className="mt-3 flex justify-center gap-4 text-[1.75rem] font-medium leading-none tracking-wide">
+								<div className="flex flex-col items-center font-medium self-y-center">
+									<div className="text-[5.5rem] leading-none tracking-wider sm:text-8xl">{remaining}</div>
+									<div className="mt-3 flex justify-center gap-3 text-[1.75rem] leading-none">
 										{checkout?.map((c, i) => (
 											<span key={i}>{c}</span>
 										))}
