@@ -18,8 +18,9 @@ export async function gamesAction({ data }) {
 		db.delete('game_players', { gameId });
 
 		// Delete all legs and throws in the game
-		let legs = db.delete('legs', { gameId });
+		let legs = db.select('legs', { gameId });
 		for (let leg of legs) {
+			db.delete('legs', leg.id);
 			db.delete('throws', { legId: leg.id });
 		}
 

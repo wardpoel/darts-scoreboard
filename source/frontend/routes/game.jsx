@@ -9,9 +9,9 @@ import { CHECKOUT_TYPE } from './root';
 import KeyboardButton from '../components/keyboard-button';
 import DartsUsedRadioButton from '../components/darts-used-radio-button';
 import UndoIcon from '../components/icons/undo-icon';
-import { DateTimeFormat } from '../utils/date-time';
 import useWakeLock from '../hooks/use-stay-lock';
 import BackButton from '../components/back-button';
+import TrashIcon from '../components/icons/trash-icon';
 
 export async function gameActions({ data, params }) {
 	let { gameId } = params;
@@ -143,6 +143,7 @@ export default function Game() {
 	let submitButtonRef = useRef();
 	let [AddScoreForm] = useForm();
 	let [UndoScoreForm] = useForm();
+	let [DeleteGameForm] = useForm();
 
 	let [score, setScore] = useState('');
 
@@ -205,7 +206,24 @@ export default function Game() {
 							{game.score} {game.checkout} out
 						</span>
 					</span>
-					<span className="text-sm font-light text-blue-100">{DateTimeFormat.format(new Date(game.createdAt))}</span>
+
+					<DeleteGameForm
+						action="/games"
+						method="post"
+						replace
+						className="contents"
+						onSubmit={event => {
+							const ok = confirm('Are you sure you want to delete this game?');
+							if (ok) return;
+							event.preventDefault();
+						}}
+					>
+						<input name="gameId" hidden readOnly value={game.id} />
+						<button type="submit" name="intent" value="delete_game" className="-m-2 p-2">
+							<TrashIcon className="size-7" />
+						</button>
+					</DeleteGameForm>
+					{/* <span className="text-sm font-light text-blue-100">{DateTimeFormat.format(new Date(game.createdAt))}</span> */}
 				</h1>
 			</Header>
 
@@ -254,15 +272,15 @@ export default function Game() {
 									<span className="-my-4 bg-violet-500 p-4 text-white group-odd:-mr-4 group-even:-ml-4">{legsWon}</span>
 								</div>
 
-								<div className="inline-flex items-center justify-center gap-1 bg-gray-700 py-4">
+								<div className="inline-flex items-center justify-center gap-1 bg-gray-700 py-4 text-gray-400">
 									<span>ma: {matchAverage}</span>
 									<span>•</span>
 									<span>la: {legAverage}</span>
 								</div>
 
 								<div className="flex flex-col items-center self-y-center">
-									<div className="text-[5.5rem] font-medium leading-none sm:text-8xl">{remaining}</div>
-									<div className="mt-3 flex justify-center gap-3 text-[1.75rem] font-light leading-none">
+									<div className="text-[5.5rem] font-medium leading-none tracking-wider sm:text-8xl">{remaining}</div>
+									<div className="mt-3 flex justify-center gap-4 text-[1.75rem] font-medium leading-none tracking-wide">
 										{checkout?.map((c, i) => (
 											<span key={i}>{c}</span>
 										))}

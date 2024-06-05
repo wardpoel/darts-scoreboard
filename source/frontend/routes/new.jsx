@@ -81,7 +81,7 @@ export default function New() {
 					</div>
 
 					<div className="mt-6">
-						<label className="text-base font-medium text-white">Mode</label>
+						<label className="text-base font-medium text-white">Score</label>
 						<div className="mt-2 grid grid-cols-4 gap-4">
 							{SCORE_PRESETS.map(score => (
 								<div key={score}>
