@@ -21,7 +21,7 @@ export async function rootActions({ data }) {
 		if (playerIds > 4) throw new BadRequestError('Select a maximum of four players to start a game');
 
 		let score = parseInt(rawScore, 10);
-		if (isNaN(score)) throw new BadRequestError('Please select a valid mode');
+		if (isNaN(score)) throw new BadRequestError('Please select a valid score');
 
 		if (Object.values(CHECKOUT_TYPE).indexOf(checkout) === -1) {
 			throw new BadRequestError('Please select a valid checkout type');

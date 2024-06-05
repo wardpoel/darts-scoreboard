@@ -7,6 +7,26 @@ import db from '../database';
 import BackButton from '../components/back-button';
 import { DateFormat } from '../utils/date-time';
 
+export async function gamesAction({ data }) {
+	let { intent } = data;
+
+	if (intent === 'delete_game') {
+		let { gameId } = data;
+		let game = db.delete('games', gameId);
+
+		// Delete all players in the game
+		db.delete('game_players', { gameId });
+
+		// Delete all legs and throws in the game
+		let legs = db.delete('legs', { gameId });
+		for (let leg of legs) {
+			db.delete('throws', { legId: leg.id });
+		}
+
+		return game;
+	}
+}
+
 export async function gamesLoader() {
 	let games = db.select('games');
 

@@ -157,7 +157,7 @@ export default function Game() {
 			timeout = setTimeout(() => {
 				scoreFormRef.current.invert.value = true;
 				submitButtonRef.current.click();
-			}, 350);
+			}, 400);
 		}
 
 		function clear() {
