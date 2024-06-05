@@ -1,13 +1,7 @@
 import React, { Suspense } from 'react';
 
 import db from '../database';
-
-const GAME_SCORE = {
-	101: 101,
-	170: 170,
-	301: 301,
-	501: 501,
-};
+import { BadRequestError } from 'http-errors';
 
 export const CHECKOUT_TYPE = {
 	single: 'Single',
@@ -20,15 +14,22 @@ export async function rootActions({ data }) {
 
 	if (intent === 'start_game') {
 		let totalPlayers = db.count('players');
-		if (totalPlayers < 2) throw new Error('Not enough players to start the game');
+		if (totalPlayers < 2) throw new BadRequestError('Not enough players to start the game');
 
-		let { playerIds } = data;
-		if (playerIds.length < 2) throw new Error('Select atleast two players to start a game');
-		if (playerIds > 4) throw new Error('Select a maximum of four players to start a game');
+		let { playerIds, score: rawScore, checkout } = data;
+		if (playerIds.length < 2) throw new BadRequestError('Select atleast two players to start a game');
+		if (playerIds > 4) throw new BadRequestError('Select a maximum of four players to start a game');
+
+		let score = parseInt(rawScore, 10);
+		if (isNaN(score)) throw new BadRequestError('Please select a valid mode');
+
+		if (Object.values(CHECKOUT_TYPE).indexOf(checkout) === -1) {
+			throw new BadRequestError('Please select a valid checkout type');
+		}
 
 		let game = db.create('games', {
-			score: GAME_SCORE[170],
-			checkout: CHECKOUT_TYPE.double,
+			score,
+			checkout,
 			createdAt: Date.now(),
 		});
 		for (let playerId of playerIds) {

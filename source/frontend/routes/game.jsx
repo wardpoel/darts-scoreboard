@@ -9,8 +9,9 @@ import { CHECKOUT_TYPE } from './root';
 import KeyboardButton from '../components/keyboard-button';
 import DartsUsedRadioButton from '../components/darts-used-radio-button';
 import UndoIcon from '../components/icons/undo-icon';
-import BackButton from '../components/back-button';
 import { DateTimeFormat } from '../utils/date-time';
+import useWakeLock from '../hooks/use-stay-lock';
+import BackButton from '../components/back-button';
 
 export async function gameActions({ data, params }) {
 	let { gameId } = params;
@@ -56,6 +57,8 @@ export async function gameActions({ data, params }) {
 		} else if (isNaN(score)) {
 			score = 0;
 		}
+
+		if (score > 180) throw new BadRequestError('Invalid score');
 
 		const left = game.score - (totalScore + score);
 
@@ -132,25 +135,6 @@ export async function gameLoader(request) {
 	};
 }
 
-function useStayAwake() {
-	useEffect(() => {
-		let wakeLock;
-		async function run() {
-			try {
-				wakeLock = await navigator.wakeLock.request('screen');
-			} catch (err) {
-				// noop
-			}
-		}
-
-		run();
-
-		return () => {
-			wakeLock?.release();
-		};
-	}, []);
-}
-
 export default function Game() {
 	let game = useLoaderResult();
 	let { throwerId } = game;
@@ -162,7 +146,7 @@ export default function Game() {
 
 	let [score, setScore] = useState('');
 
-	useStayAwake();
+	useWakeLock();
 
 	useEffect(() => {
 		let element = submitButtonRef.current;
@@ -173,7 +157,7 @@ export default function Game() {
 			timeout = setTimeout(() => {
 				scoreFormRef.current.invert.value = true;
 				submitButtonRef.current.click();
-			}, 500);
+			}, 350);
 		}
 
 		function clear() {
