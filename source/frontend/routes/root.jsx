@@ -44,8 +44,10 @@ export async function rootActions({ data }) {
 
 export default function Root(props) {
 	return (
-		<div className="mx-auto h-full w-full max-w-screen-sm bg-gray-800 text-white">
-			<Suspense fallback={null}>{props.children}</Suspense>
+		<div className="mx-auto h-full w-full max-w-screen-md md:p-4">
+			<div className="h-full w-full bg-gray-800 text-white">
+				<Suspense fallback={null}>{props.children}</Suspense>
+			</div>
 		</div>
 	);
 }

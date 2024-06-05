@@ -14,15 +14,15 @@ export default function BackButton() {
 	let hasNavigatedInApp = history.length > historyLength;
 	if (hasNavigatedInApp) {
 		return (
-			<Link href=".." replace>
+			<button onClick={handleClick}>
 				<BackIcon className="size-7" />
-			</Link>
+			</button>
 		);
 	}
 
 	return (
-		<button onClick={handleClick}>
+		<Link href=".." replace>
 			<BackIcon className="size-7" />
-		</button>
+		</Link>
 	);
 }

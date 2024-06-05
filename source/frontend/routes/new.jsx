@@ -25,15 +25,8 @@ export default function New() {
 				<ul className="grid grid-cols-2 gap-4 self-y-start">
 					{players.map(player => (
 						<li key={player.id}>
-							<input
-								hidden
-								readOnly
-								type="checkbox"
-								id={`player-${player.id}`}
-								name="playerIds[]"
-								value={player.id}
-								className="peer"
-							/>
+							<input hidden readOnly type="checkbox" id={`player-${player.id}`} value={player.id} className="peer" />
+							<input type="hidden" name="playerIds[]" />
 							<label htmlFor={`player-${player.id}`} className="peer-checked:bg-blue-500">
 								{player.name}
 							</label>

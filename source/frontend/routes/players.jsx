@@ -4,7 +4,6 @@ import { NotImplementedError } from 'http-errors';
 import db from '../database';
 import { Link, useForm, useLoaderResult } from 'react-sprout';
 import Header from '../components/header';
-import PlayerName from '../components/player-name';
 import BackButton from '../components/back-button';
 
 export async function playersActions({ data }) {
@@ -19,6 +18,21 @@ export async function playersActions({ data }) {
 	if (intent === 'delete_player') {
 		let playerId = data.playerId;
 		let player = db.delete('players', playerId);
+		let playerGames = db.select('game_players', { playerId });
+
+		for (let playerGame of playerGames) {
+			// Remove the game
+			db.delete('games', playerGame.gameId);
+			db.delete('game_players', playerGames.id);
+
+			// Remove all the legs for this game and all the throws for those legs
+			let legs = db.select('legs', { gameId: playerGame.gameId });
+			for (let leg of legs) {
+				db.delete('throws', { legId: leg.id });
+				db.delete('legs', leg.id);
+			}
+		}
+
 		return player;
 	}
 
@@ -51,17 +65,17 @@ function PlayersView() {
 	let [AddPlayerForm] = useForm();
 
 	return (
-		<div className="grid h-full grid-cols-1 grid-rows-[minmax(0,1fr),max-content] overflow-y-auto">
+		<div className="grid max-h-screen grid-cols-1 grid-rows-[minmax(0,1fr),max-content] overflow-y-auto">
 			<ul className="grid max-h-full grid-cols-1 divide-y divide-gray-700 overflow-y-auto py-1 self-y-start">
 				{players.map(player => (
-					<PlayerListItem key={player.id} id={player.id} />
+					<PlayerListItem key={player.id} player={player} />
 				))}
 			</ul>
 
 			<AddPlayerForm
 				action="/players"
 				method="post"
-				className="flex flex-col gap-2 p-4"
+				className="m-4 flex flex-col gap-2"
 				onNavigateEnd={event => {
 					event.originalEvent.target.reset();
 				}}
@@ -81,11 +95,11 @@ function PlayersView() {
 }
 
 function PlayerListItem(props) {
-	let { id } = props;
+	let { player } = props;
 	return (
 		<li>
-			<Link href={id} className="block px-4 py-3 text-lg active:bg-gray-700" cache>
-				<PlayerName id={id} />
+			<Link href={player.id} className="block px-4 py-3 text-lg active:bg-gray-700" cache>
+				{player.name}
 			</Link>
 		</li>
 	);

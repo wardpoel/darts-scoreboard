@@ -4,13 +4,13 @@ import { useForm, useLoaderResult } from 'react-sprout';
 import db from '../database';
 import { BadRequestError, NotFoundError } from 'http-errors';
 import Header from '../components/header';
-import PlayerName from '../components/player-name';
-import checkouts from '../checkouts';
+import checkouts from '../utils/checkouts';
 import { CHECKOUT_TYPE } from './root';
 import KeyboardButton from '../components/keyboard-button';
 import DartsUsedRadioButton from '../components/darts-used-radio-button';
 import UndoIcon from '../components/icons/undo-icon';
 import BackButton from '../components/back-button';
+import { DateTimeFormat } from '../utils/date-time';
 
 export async function gameActions({ data, params }) {
 	let { gameId } = params;
@@ -132,14 +132,6 @@ export async function gameLoader(request) {
 	};
 }
 
-const DateTimeFormat = new Intl.DateTimeFormat('nl-BE', {
-	day: 'numeric',
-	year: 'numeric',
-	month: '2-digit',
-	hour: 'numeric',
-	minute: 'numeric',
-});
-
 function useStayAwake() {
 	useEffect(() => {
 		let wakeLock;
@@ -220,7 +212,7 @@ export default function Game() {
 	}
 
 	return (
-		<div className="grid h-full grid-rows-[max-content,auto]">
+		<div className="grid h-full max-h-screen grid-rows-[max-content,auto]">
 			<Header>
 				<h1 className="flex items-center justify-between">
 					<span className="flex items-center gap-4">
@@ -270,9 +262,7 @@ export default function Game() {
 							>
 								<div className="flex items-center justify-between gap-1 px-4 py-4 text-lg font-semibold group-even:flex-row-reverse">
 									<div className="flex items-center gap-1 truncate group-even:flex-row-reverse">
-										<span className="truncate group-even:flex-grow">
-											<PlayerName id={playerId} />
-										</span>
+										<span className="truncate group-even:flex-grow">{player.name}</span>
 										<span>({dartsThrown})</span>
 										<span className="mx-1 hidden text-sm group-data-[thrower=true]:inline">🎯</span>
 									</div>
