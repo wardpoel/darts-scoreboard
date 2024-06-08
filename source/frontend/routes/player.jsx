@@ -70,23 +70,23 @@ export default function Player() {
 			</Header>
 
 			<main className="grid grid-cols-2 gap-4 p-4 proportional-nums">
-				<StatCard title="Wins" number={player.wins} total={player.totalGames} />
-				<StatCard title="Losses" number={player.losses} total={player.totalGames} invert />
+				<StatCard title="Wins" number={player.wins} total={player.totalGames} isPositive={perc => perc >= 50} />
+				<StatCard title="Losses" number={player.losses} total={player.totalGames} isPositive={perc => perc < 50} />
 			</main>
 		</div>
 	);
 }
 
 function StatCard(props) {
-	let { title, number, total, invert } = props;
+	let { title, number, total, isPositive } = props;
 
 	let percentage = (number / total) * 100;
 	return (
 		<div className="grid grid-cols-2 rounded-md border-2 border-gray-500 px-4 py-2 text-right items-x-start">
 			<span className="text-sm font-semibold text-gray-200">{title}</span>
 			<span
-				data-positive={percentage >= 50 && !invert}
-				data-negative={percentage <= 50 && percentage !== 0 && invert}
+				data-positive={isPositive(percentage)}
+				data-negative={!isPositive(percentage)}
 				className="text-xs font-light self-x-end self-y-center data-[negative=true]:text-red-400 data-[positive=true]:text-green-400"
 			>
 				{percentage.toFixed(0)}%
