@@ -223,7 +223,6 @@ export default function Game() {
 							<TrashIcon className="size-7" />
 						</button>
 					</DeleteGameForm>
-					{/* <span className="text-sm font-light text-blue-100">{DateTimeFormat.format(new Date(game.createdAt))}</span> */}
 				</h1>
 			</Header>
 

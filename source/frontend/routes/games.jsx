@@ -58,7 +58,7 @@ export async function gamesLoader() {
 		game.scores = scores;
 	}
 
-	return games;
+	return games.sort((a, b) => b.createdAt - a.createdAt);
 }
 
 export default function Games() {
