@@ -69,6 +69,7 @@ function Tab(props) {
 		<Link
 			href={`./${href}`}
 			replace
+			cache
 			data-active={active}
 			className="flex flex-col items-center gap-2 border-white py-3 data-[active=true]:border-b-2 data-[active=false]:text-blue-200 data-[active=true]:text-white"
 		>
