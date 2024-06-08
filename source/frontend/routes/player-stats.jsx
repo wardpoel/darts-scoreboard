@@ -49,8 +49,7 @@ export async function playerStatsLoader(request) {
 		}
 	}
 
-	let average = totalScore / totalDarts;
-
+	let average = totalScore / (totalDarts / 3);
 	return { gameWins, gameLosses, totalGames, legWins, legLosses, totalLegs, average, totalScore, totalDarts };
 }
 
