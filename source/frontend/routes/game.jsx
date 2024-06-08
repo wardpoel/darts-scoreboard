@@ -8,10 +8,9 @@ import checkouts from '../utils/checkouts';
 import { CHECKOUT_TYPE } from './root';
 import KeyboardButton from '../components/keyboard-button';
 import DartsUsedRadioButton from '../components/darts-used-radio-button';
-import UndoIcon from '../components/icons/undo-icon';
 import useWakeLock from '../hooks/use-stay-lock';
 import BackButton from '../components/back-button';
-import TrashIcon from '../components/icons/trash-icon';
+import { TrashIcon, Undo2Icon } from 'lucide-react';
 
 export async function gameActions({ data, params }) {
 	let { gameId } = params;
@@ -300,7 +299,7 @@ export default function Game() {
 									>
 										<span>Last: {lastPlayerScore ?? 0}</span>
 										<button type="submit" name="intent" value="undo_score" className="p-0.5 disabled:text-gray-500">
-											<UndoIcon className="size-7" />
+											<Undo2Icon className="size-7" />
 										</button>
 									</UndoScoreForm>
 								</div>

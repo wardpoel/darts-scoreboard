@@ -1,10 +1,10 @@
 import React from 'react';
-import Header from '../components/header';
-import { useForm, useLoaderResult } from 'react-sprout';
-import db from '../database';
+import { Link, useForm, useLoaderResult, useLocation } from 'react-sprout';
 import { NotFoundError } from 'http-errors';
+import db from '../database';
+import Header from '../components/header';
 import BackButton from '../components/back-button';
-import TrashIcon from '../components/icons/trash-icon';
+import { BarChart2Icon, JoystickIcon, TrashIcon } from 'lucide-react';
 
 export async function playerLoader(request) {
 	let { params } = request;
@@ -12,32 +12,10 @@ export async function playerLoader(request) {
 	let player = db.find('players', params.playerId);
 	if (player == undefined) throw new NotFoundError('Player not found');
 
-	let playerGames = db.select('game_players', { playerId: player.id });
-
-	let wins = 0;
-	let losses = 0;
-	let totalGames = 0;
-	for (let playerGame of playerGames) {
-		let gameLegs = db.select('legs', { gameId: playerGame.gameId });
-
-		let gameLegWins = gameLegs.filter(leg => leg.winnerId === player.id).length;
-		let gameLegLosses = gameLegs.filter(leg => leg.winnerId != undefined && leg.winnerId !== player.id).length;
-
-		if (gameLegWins === gameLegLosses) continue;
-
-		if (gameLegWins > gameLegLosses) wins++;
-		if (gameLegWins < gameLegLosses) losses++;
-		totalGames++;
-	}
-
-	player.wins = wins;
-	player.losses = losses;
-	player.totalGames = totalGames;
-
 	return player;
 }
 
-export default function Player() {
+export default function Player(props) {
 	let player = useLoaderResult();
 	let [DeletePlayerForm] = useForm();
 
@@ -69,32 +47,33 @@ export default function Player() {
 				</h1>
 			</Header>
 
-			<main className="grid grid-cols-2 gap-4 p-4 proportional-nums">
-				<StatCard title="Wins" number={player.wins} total={player.totalGames} isPositive={perc => perc >= 50} />
-				<StatCard title="Losses" number={player.losses} total={player.totalGames} isPositive={perc => perc < 50} />
-			</main>
+			<div className="bg-blue-500">
+				<nav className="mx-auto grid grid-cols-2 font-semibold md:max-w-lg">
+					<Tab href="stats" icon={<BarChart2Icon />} title="Stats" />
+					<Tab href="games" icon={<JoystickIcon />} title="Games" />
+				</nav>
+			</div>
+
+			<main>{props.children}</main>
 		</div>
 	);
 }
 
-function StatCard(props) {
-	let { title, number, total, isPositive } = props;
+function Tab(props) {
+	let { href, icon, title } = props;
+	let location = useLocation();
 
-	let percentage = (number / total) * 100;
+	let active = location.pathname.includes(href);
+
 	return (
-		<div className="grid grid-cols-2 rounded-md border-2 border-gray-500 px-4 py-2 text-right items-x-start">
-			<span className="text-sm font-semibold text-gray-200">{title}</span>
-			<span
-				data-positive={isPositive(percentage)}
-				data-negative={!isPositive(percentage)}
-				className="text-xs font-light self-x-end self-y-center data-[negative=true]:text-red-400 data-[positive=true]:text-green-400"
-			>
-				{percentage.toFixed(0)}%
-			</span>
-			<div className="col-span-2">
-				<span className="text-5xl">{number}</span>&nbsp;
-				<span className="text-sm font-light text-gray-300">/ {total}</span>
-			</div>
-		</div>
+		<Link
+			href={`./${href}`}
+			replace
+			data-active={active}
+			className="flex flex-col items-center gap-2 border-white py-3 data-[active=true]:border-b-2 data-[active=false]:text-blue-200 data-[active=true]:text-white"
+		>
+			{icon}
+			<span className="text-sm uppercase">{title}</span>
+		</Link>
 	);
 }
