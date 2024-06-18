@@ -24,7 +24,7 @@ export default Routes(
 		<Players path="players" loader={playersLoader} action={playersActions} />
 
 		<Player path="players/:playerId" loader={playerLoader}>
-			<PlayerStats path="stats" loader={playerStatsLoader} />
+			<PlayerStats path="stats?score&checkout" loader={playerStatsLoader} />
 			<PlayerGames path="games" loader={playerGamesLoader} />
 		</Player>
 

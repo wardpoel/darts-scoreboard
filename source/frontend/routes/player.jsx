@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { Link, useForm, useLoaderResult, useLocation } from 'react-sprout';
 import { NotFoundError } from 'http-errors';
 import db from '../database';
@@ -54,7 +54,9 @@ export default function Player(props) {
 				</nav>
 			</div>
 
-			<main>{props.children}</main>
+			<main>
+				<Suspense>{props.children}</Suspense>
+			</main>
 		</div>
 	);
 }
@@ -70,6 +72,7 @@ function Tab(props) {
 			href={`./${href}`}
 			replace
 			cache
+			sticky={false}
 			data-active={active}
 			className="flex flex-col items-center gap-2 border-white py-3 data-[active=true]:border-b-2 data-[active=false]:text-blue-200 data-[active=true]:text-white"
 		>

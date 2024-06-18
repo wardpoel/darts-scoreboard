@@ -4,9 +4,9 @@ import db from '../database';
 import { BadRequestError } from 'http-errors';
 
 export const CHECKOUT_TYPE = {
-	single: 'Single',
-	double: 'Double',
-	triple: 'Triple',
+	single: 'single',
+	double: 'double',
+	triple: 'triple',
 };
 
 export async function rootActions({ data }) {

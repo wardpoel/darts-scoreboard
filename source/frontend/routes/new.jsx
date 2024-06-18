@@ -5,7 +5,7 @@ import Header from '../components/header';
 import BackButton from '../components/back-button';
 import { CHECKOUT_TYPE } from './root';
 
-const SCORE_PRESETS = [101, 170, 301, 501];
+export const SCORE_PRESETS = [101, 170, 301, 501];
 
 export async function newLoader() {
 	return db.select('players');
@@ -108,7 +108,7 @@ export default function New() {
 					<div className="mt-6">
 						<label className="text-base font-medium text-white">Checkout</label>
 						<div className="mt-2 grid grid-cols-3 gap-4">
-							{Object.values(CHECKOUT_TYPE).map(checkout => (
+							{Object.keys(CHECKOUT_TYPE).map(checkout => (
 								<div key={checkout}>
 									<input
 										type="radio"
@@ -121,7 +121,7 @@ export default function New() {
 									/>
 									<label
 										htmlFor={`checkout-${checkout}`}
-										className="block rounded-md border-2 border-gray-500 p-4 text-center peer-checked:border-blue-500 peer-checked:bg-blue-500"
+										className="block rounded-md border-2 border-gray-500 p-4 text-center uppercase peer-checked:border-blue-500 peer-checked:bg-blue-500"
 									>
 										{checkout}
 									</label>
