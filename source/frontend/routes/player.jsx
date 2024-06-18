@@ -82,7 +82,7 @@ export default function Player(props) {
 					</nav>
 				</div>
 
-				<div className="mt-4 px-4">
+				<div className="p-4">
 					<div className="grid grid-cols-5 gap-2 text-sm">
 						{['all', ...SCORE_PRESETS].map(score => (
 							<div key={score} className="flex-grow">
