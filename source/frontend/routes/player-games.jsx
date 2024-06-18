@@ -5,7 +5,9 @@ import { Link, useLoaderResult, useParams } from 'react-sprout';
 import { DateFormat } from '../utils/date-time';
 
 export async function playerGamesLoader(request) {
-	let { params } = request;
+	let { params, url } = request;
+	let score = url.searchParams.get('score') ?? 'all';
+	let checkout = url.searchParams.get('checkout') ?? 'all';
 
 	let player = db.find('players', params.playerId);
 	if (player == undefined) throw new NotFoundError('Player not found');
@@ -15,6 +17,15 @@ export async function playerGamesLoader(request) {
 	let games = [];
 	for (let gamePlayer of playerGames) {
 		let game = db.find('games', gamePlayer.gameId);
+
+		if (score !== 'all' && checkout === 'all') {
+			if (game.score.toString() !== score) continue;
+		} else if (score === 'all' && checkout !== 'all') {
+			if (game.checkout.toLowerCase() !== checkout.toLowerCase()) continue;
+		} else if (score !== 'all' && checkout !== 'all') {
+			if (game.score.toString() !== score || game.checkout.toLowerCase() !== checkout.toLowerCase()) continue;
+		}
+
 		let gamePlayers = db.select('game_players', { gameId: game.id });
 
 		let players = [];
@@ -50,6 +61,7 @@ export async function playerGamesLoader(request) {
 export default function PlayerGames() {
 	let { games } = useLoaderResult();
 
+	if (games.length === 0) return <p className="p-4 text-gray-400">No games played yet</p>;
 	return (
 		<ul className="py-1">
 			{games.map(game => (

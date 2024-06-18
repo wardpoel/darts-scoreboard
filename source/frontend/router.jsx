@@ -23,9 +23,9 @@ export default Routes(
 
 		<Players path="players" loader={playersLoader} action={playersActions} />
 
-		<Player path="players/:playerId" loader={playerLoader}>
+		<Player path="players/:playerId?score&checkout" loader={playerLoader}>
 			<PlayerStats path="stats?score&checkout" loader={playerStatsLoader} />
-			<PlayerGames path="games" loader={playerGamesLoader} />
+			<PlayerGames path="games?score&checkout" loader={playerGamesLoader} />
 		</Player>
 
 		<Redirect path="players/:playerId" to="players/:playerId/stats" />

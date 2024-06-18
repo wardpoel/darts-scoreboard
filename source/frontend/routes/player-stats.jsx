@@ -1,14 +1,12 @@
 import React from 'react';
 import db from '../database';
 import { NotFoundError } from 'http-errors';
-import { useLoaderResult, useLocation, useNavigate } from 'react-sprout';
-import { SCORE_PRESETS } from './new';
-import { CHECKOUT_TYPE } from './root';
+import { useLoaderResult } from 'react-sprout';
 
 export async function playerStatsLoader(request) {
-	let { params } = request;
-	let score = request.url.searchParams.get('score') ?? 'all';
-	let checkout = request.url.searchParams.get('checkout') ?? 'all';
+	let { params, url } = request;
+	let score = url.searchParams.get('score') ?? 'all';
+	let checkout = url.searchParams.get('checkout') ?? 'all';
 
 	let player = db.find('players', params.playerId);
 	if (player == undefined) throw new NotFoundError('Player not found');
@@ -71,96 +69,22 @@ function isWinningPercentagePositive(percentage) {
 
 export default function PlayerStats() {
 	let { gameWins, gameLosses, totalGames, legWins, legLosses, totalLegs, average, totalDarts } = useLoaderResult();
-	let [navigate] = useNavigate();
-	let location = useLocation();
-
-	let searchParams = location.searchParams;
-	let currentScore = searchParams.get('score') ?? 'all';
-	let currentCheckout = searchParams.get('checkout') ?? 'all';
-
-	function handleScoreChange(event) {
-		let value = event.target.value;
-
-		let searchParams = new URLSearchParams(location.search);
-		searchParams.set('score', value);
-
-		navigate(`?${searchParams.toString()}`, { replace: true });
-	}
-
-	function handleCheckoutChange(event) {
-		let value = event.target.value;
-
-		let searchParams = new URLSearchParams(location.search);
-		searchParams.set('checkout', value);
-
-		navigate(`?${searchParams.toString()}`, { replace: true });
-	}
 
 	return (
 		<div className="p-4">
-			<div className="grid grid-cols-5 gap-4">
-				{['all', ...SCORE_PRESETS].map(score => (
-					<div key={score}>
-						<input
-							type="radio"
-							hidden
-							readOnly
-							id={`score-${score}`}
-							name="score"
-							value={score}
-							checked={currentScore === score.toString()}
-							className="peer"
-							onChange={handleScoreChange}
-						/>
-						<label
-							htmlFor={`score-${score}`}
-							className="block rounded-md border-2 border-gray-500 p-4 text-center uppercase peer-checked:border-blue-500 peer-checked:bg-blue-500"
-						>
-							{score}
-						</label>
-					</div>
-				))}
-			</div>
+			{totalGames > 0 ? (
+				<div className="grid grid-cols-2 gap-4 proportional-nums">
+					<StatCard title="3 Dart average" number={average.toFixed(2)} />
+					<StatCard title="Darts thrown" number={totalDarts} />
 
-			<div className="mt-4 grid grid-cols-4 gap-4">
-				{['all', ...Object.keys(CHECKOUT_TYPE)].map(checkout => (
-					<div key={checkout}>
-						<input
-							type="radio"
-							hidden
-							readOnly
-							id={`checkout-${checkout}`}
-							name="checkout"
-							value={checkout}
-							checked={currentCheckout === checkout}
-							className="peer"
-							onChange={handleCheckoutChange}
-						/>
-						<label
-							htmlFor={`checkout-${checkout}`}
-							className="block rounded-md border-2 border-gray-500 p-4 text-center uppercase peer-checked:border-blue-500 peer-checked:bg-blue-500"
-						>
-							{checkout}
-						</label>
-					</div>
-				))}
-			</div>
-
-			<div className="mt-4">
-				{totalGames > 0 ? (
-					<div className="grid grid-cols-2 gap-4 proportional-nums">
-						<StatCard title="3 Dart average" number={average.toFixed(2)} />
-						<StatCard title="Darts thrown" number={totalDarts} />
-
-						<StatCard title="Game wins" number={gameWins} total={totalGames} isPositive={isWinningPercentagePositive} />
-						<StatCard title="Game losses" number={gameLosses} total={totalGames} />
-						<StatCard title="Leg wins" number={legWins} total={totalLegs} isPositive={isWinningPercentagePositive} />
-						<StatCard title="Leg losses" number={legLosses} total={totalLegs} />
-					</div>
-				) : (
-					<p className="text-gray-400">No games played yet</p>
-				)}
-			</div>
+					<StatCard title="Game wins" number={gameWins} total={totalGames} isPositive={isWinningPercentagePositive} />
+					<StatCard title="Game losses" number={gameLosses} total={totalGames} />
+					<StatCard title="Leg wins" number={legWins} total={totalLegs} isPositive={isWinningPercentagePositive} />
+					<StatCard title="Leg losses" number={legLosses} total={totalLegs} />
+				</div>
+			) : (
+				<p className="text-gray-400">No games played yet</p>
+			)}
 		</div>
 	);
 }
