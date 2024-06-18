@@ -1,7 +1,8 @@
-import React, { Suspense } from 'react';
+import React from 'react';
 
 import db from '../database';
 import { BadRequestError } from 'http-errors';
+import Suspense from '../components/suspense';
 
 export const CHECKOUT_TYPE = {
 	single: 'single',
@@ -47,7 +48,7 @@ export default function Root(props) {
 	return (
 		<div className="mx-auto h-full w-full max-w-screen-md md:p-4">
 			<div className="h-full w-full bg-gray-800 text-white">
-				<Suspense fallback={null}>{props.children}</Suspense>
+				<Suspense>{props.children}</Suspense>
 			</div>
 		</div>
 	);

@@ -1,10 +1,11 @@
-import React, { Suspense } from 'react';
+import React from 'react';
 
 import { NotImplementedError } from 'http-errors';
 import db from '../database';
 import { Link, useForm, useLoaderResult } from 'react-sprout';
 import Header from '../components/header';
 import BackButton from '../components/back-button';
+import Suspense from '../components/suspense';
 
 export async function playersActions({ data }) {
 	let intent = data.intent;

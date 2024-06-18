@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import React from 'react';
 
 import { Link, useLoaderResult } from 'react-sprout';
 
@@ -6,6 +6,7 @@ import Header from '../components/header';
 import db from '../database';
 import BackButton from '../components/back-button';
 import { DateFormat } from '../utils/date-time';
+import Suspense from '../components/suspense';
 
 export async function gamesAction({ data }) {
 	let { intent } = data;

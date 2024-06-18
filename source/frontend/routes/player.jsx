@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import React from 'react';
 import { Link, useForm, useLoaderResult, useLocation, useNavigate } from 'react-sprout';
 import { NotFoundError } from 'http-errors';
 import db from '../database';
@@ -7,6 +7,7 @@ import BackButton from '../components/back-button';
 import { BarChart2Icon, JoystickIcon, TrashIcon } from 'lucide-react';
 import { SCORE_PRESETS } from './new';
 import { CHECKOUT_TYPE } from './root';
+import Suspense from '../components/suspense';
 
 export async function playerLoader(request) {
 	let { params } = request;
