@@ -34,7 +34,7 @@ export default function Player(props) {
 		let searchParams = new URLSearchParams(location.search);
 		searchParams.set('score', value);
 
-		navigate(`${location.pathname}?${searchParams.toString()}`, { replace: true });
+		navigate(`${location.pathname}?${searchParams.toString()}`, { replace: true, sticky: false });
 	}
 
 	function handleCheckoutChange(event) {
@@ -43,7 +43,7 @@ export default function Player(props) {
 		let searchParams = new URLSearchParams(location.search);
 		searchParams.set('checkout', value);
 
-		navigate(`${location.pathname}?${searchParams.toString()}`, { replace: true });
+		navigate(`${location.pathname}?${searchParams.toString()}`, { replace: true, sticky: false });
 	}
 
 	return (
