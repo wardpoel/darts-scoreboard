@@ -36,7 +36,7 @@ export async function gamesLoader() {
 		let gamePlayers = db.select('game_players', { gameId: game.id });
 		let players = [];
 		for (let gamePlayer of gamePlayers) {
-			let player = db.find('players', gamePlayer.playerId);
+			let player = db.selectById('players', gamePlayer.playerId);
 			if (player == undefined) continue;
 
 			players.push(player);

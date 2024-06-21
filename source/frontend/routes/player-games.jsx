@@ -9,14 +9,14 @@ export async function playerGamesLoader(request) {
 	let score = url.searchParams.get('score') ?? 'all';
 	let checkout = url.searchParams.get('checkout') ?? 'all';
 
-	let player = db.find('players', params.playerId);
+	let player = db.selectById('players', params.playerId);
 	if (player == undefined) throw new NotFoundError('Player not found');
 
 	let playerGames = db.select('game_players', { playerId: player.id });
 
 	let games = [];
 	for (let gamePlayer of playerGames) {
-		let game = db.find('games', gamePlayer.gameId);
+		let game = db.selectById('games', gamePlayer.gameId);
 
 		if (score !== 'all' && checkout === 'all') {
 			if (game.score.toString() !== score) continue;
@@ -30,7 +30,7 @@ export async function playerGamesLoader(request) {
 
 		let players = [];
 		for (let gamePlayer of gamePlayers) {
-			let player = db.find('players', gamePlayer.playerId);
+			let player = db.selectById('players', gamePlayer.playerId);
 			if (player == undefined) continue;
 
 			players.push(player);
@@ -61,7 +61,7 @@ export async function playerGamesLoader(request) {
 export default function PlayerGames() {
 	let { games } = useLoaderResult();
 
-	if (games.length === 0) return <p className="p-4 text-gray-400">No games played yet</p>;
+	if (games.length === 0) return <p className="px-4 text-gray-400">No games played yet</p>;
 	return (
 		<ul className="py-1">
 			{games.map(game => (

@@ -18,7 +18,7 @@ export async function gameActions({ data, params }) {
 	let intent = data.intent;
 	if (intent === 'add_score') {
 		// check if the game exists
-		let game = db.find('games', gameId);
+		let game = db.selectById('games', gameId);
 		if (game == undefined) throw new NotFoundError('Game not found');
 
 		let gamePlayers = db.select('game_players', { gameId: game.id });
@@ -80,7 +80,7 @@ export async function gameActions({ data, params }) {
 			db.update('legs', leg.id, { id: leg.id, gameId: game.id, winnerId: throwerId, createdAt: leg.createdAt });
 		}
 	} else if (intent === 'undo_score') {
-		let game = db.find('games', gameId);
+		let game = db.selectById('games', gameId);
 		if (game == undefined) throw new NotFoundError('Game not found');
 
 		let legs = db.select('legs', { gameId: game.id });
@@ -105,13 +105,13 @@ export async function gameActions({ data, params }) {
 export async function gameLoader(request) {
 	let { gameId } = request.params;
 
-	let game = db.find('games', gameId);
+	let game = db.selectById('games', gameId);
 	if (game == undefined) throw new NotFoundError('Game not found');
 
 	let gamePlayers = db.select('game_players', { gameId: game.id });
 	let players = [];
 	for (let gamePlayer of gamePlayers) {
-		let player = db.find('players', gamePlayer.playerId);
+		let player = db.selectById('players', gamePlayer.playerId);
 		if (player == undefined) continue;
 
 		players.push(player);
@@ -195,6 +195,13 @@ export default function Game() {
 		setScore(`${parsedNewValue}`);
 	}
 
+	let lastScore = 0;
+	let leg = game.legs[game.legs.length - 1];
+	if (leg != undefined && leg.winnerId == undefined) {
+		let lastThrow = leg.throws[leg.throws.length - 1];
+		if (lastThrow != undefined) lastScore = lastThrow.score;
+	}
+
 	return (
 		<div className="grid h-full max-h-screen grid-rows-[max-content,auto]">
 			<Header>
@@ -225,88 +232,115 @@ export default function Game() {
 				</h1>
 			</Header>
 
-			<main className="grid grid-rows-[auto,max-content]">
-				<ul className="grid grid-cols-2">
-					{game.players.map(player => {
-						let playerId = player.id;
-						let { legs } = game;
+			<main className="grid grid-rows-[auto,max-content,max-content]">
+				{game.players.length === 2 ? (
+					<ul className="grid grid-cols-2">
+						{game.players.map(player => {
+							let playerId = player.id;
+							let { legAverage, dartsThrown, legsWon, matchAverage, remaining } = calculate(game, playerId);
+							let checkout = checkouts[remaining];
 
-						let playerThrows = legs.flatMap(l => l.throws).filter(t => t.playerId === playerId);
-						let leg = game.legs[game.legs.length - 1];
+							return (
+								<li
+									key={playerId}
+									data-thrower={throwerId === playerId}
+									className="group grid grid-rows-[max-content,max-content,minmax(min-content,1fr)] text-gray-400 data-[thrower=true]:text-white"
+								>
+									<div className="flex items-center justify-between gap-1 p-4 text-lg font-semibold group-even:flex-row-reverse">
+										<div className="flex items-center gap-1 truncate group-even:flex-row-reverse">
+											<span className="truncate group-even:flex-grow">{player.name}</span>
+											<span>({dartsThrown})</span>
+											<span className="mx-1 hidden text-sm group-data-[thrower=true]:inline">🎯</span>
+										</div>
 
-						let legsWon = legs.filter(l => l.winnerId === playerId).length;
+										<span className="-my-4 bg-violet-500 p-4 text-white group-odd:-mr-4 group-even:-ml-4">
+											{legsWon}
+										</span>
+									</div>
 
-						let legAverage = 0;
-						let dartsThrown = 0;
-						let legTotalScore = 0;
-						let lastPlayerScore;
-						if (leg != undefined && leg.winnerId == undefined) {
-							let legPlayerThrows = leg.throws.filter(t => t.playerId === playerId);
-							dartsThrown = legPlayerThrows.reduce((acc, t) => acc + t.darts, 0);
-							legTotalScore = legPlayerThrows.reduce((acc, t) => acc + t.score, 0);
-							lastPlayerScore = legPlayerThrows[legPlayerThrows.length - 1]?.score;
+									<div className="inline-flex items-center justify-center gap-1 bg-gray-700 py-4 text-gray-400">
+										<span>ma: {matchAverage}</span>
+										<span>•</span>
+										<span>la: {legAverage}</span>
+									</div>
 
-							legAverage = legPlayerThrows.length === 0 ? 0 : (legTotalScore / legPlayerThrows.length).toFixed(1);
-						}
+									<div className="flex flex-col items-center font-medium self-y-center">
+										<div className="text-[5.5rem] leading-none tracking-wider sm:text-8xl">{remaining}</div>
+										<div className="mt-3 flex justify-center gap-3 text-[1.75rem] leading-none">
+											{checkout?.map((c, i) => (
+												<span key={i}>{c}</span>
+											))}
+										</div>
+									</div>
 
-						let remaining = game.score - legTotalScore;
-						let checkout = checkouts[remaining];
+									<div className="text-2xl">
+										<div
+											data-score={score !== ''}
+											className="bg-white p-4 text-center text-gray-400 data-[score=true]:text-gray-800 group-data-[thrower=false]:hidden"
+										>
+											{score === '' ? 'Enter score' : score}
+										</div>
 
-						let matchTotalScore = playerThrows.reduce((acc, t) => acc + t.score, 0);
-						let matchAverage = playerThrows.length === 0 ? 0 : (matchTotalScore / playerThrows.length).toFixed(1);
-						return (
-							<li
-								key={playerId}
-								data-thrower={throwerId === playerId}
-								className="group grid grid-rows-[max-content,max-content,minmax(min-content,1fr)] text-gray-400 data-[thrower=true]:text-white"
+										<UndoScoreForm
+											method="post"
+											className="flex items-center justify-between gap-2 bg-gray-700 p-4 text-gray-400 group-data-[thrower=true]:hidden"
+										>
+											<span>Last: {lastScore}</span>
+											<button type="submit" name="intent" value="undo_score" className="p-0.5 disabled:text-gray-500">
+												<Undo2Icon className="size-7" />
+											</button>
+										</UndoScoreForm>
+									</div>
+								</li>
+							);
+						})}
+					</ul>
+				) : null}
+
+				{game.players.length > 2 ? (
+					<div className="px-4">
+						<ul className="flex flex-col items-y-start">
+							{game.players.map(player => {
+								let playerId = player.id;
+								let { legAverage, dartsThrown, legsWon, matchAverage, remaining } = calculate(game, playerId);
+
+								return (
+									<li key={playerId} data-thrower={throwerId === playerId} className="group w-full">
+										<div className="grid grid-cols-[auto,repeat(2,max-content)] text-lg font-semibold proportional-nums">
+											<div className="flex items-center gap-1 truncate">
+												<span className="truncate group-even:flex-grow">{player.name}</span>
+												<span>({dartsThrown})</span>
+												<span className="mx-1 hidden text-sm group-data-[thrower=true]:inline">🎯</span>
+											</div>
+
+											<span className="bg-violet-500 p-4 text-white">{legsWon}</span>
+											<span>{remaining}</span>
+										</div>
+									</li>
+								);
+							})}
+						</ul>
+
+						<div className="grid grid-cols-2 text-2xl">
+							<div
+								data-score={score !== ''}
+								className="bg-white p-4 text-center text-gray-400 data-[score=true]:text-gray-800"
 							>
-								<div className="flex items-center justify-between gap-1 px-4 py-4 text-lg font-semibold group-even:flex-row-reverse">
-									<div className="flex items-center gap-1 truncate group-even:flex-row-reverse">
-										<span className="truncate group-even:flex-grow">{player.name}</span>
-										<span>({dartsThrown})</span>
-										<span className="mx-1 hidden text-sm group-data-[thrower=true]:inline">🎯</span>
-									</div>
+								{score === '' ? 'Enter score' : score}
+							</div>
 
-									<span className="-my-4 bg-violet-500 p-4 text-white group-odd:-mr-4 group-even:-ml-4">{legsWon}</span>
-								</div>
-
-								<div className="inline-flex items-center justify-center gap-1 bg-gray-700 py-4 text-gray-400">
-									<span>ma: {matchAverage}</span>
-									<span>•</span>
-									<span>la: {legAverage}</span>
-								</div>
-
-								<div className="flex flex-col items-center font-medium self-y-center">
-									<div className="text-[5.5rem] leading-none tracking-wider sm:text-8xl">{remaining}</div>
-									<div className="mt-3 flex justify-center gap-3 text-[1.75rem] leading-none">
-										{checkout?.map((c, i) => (
-											<span key={i}>{c}</span>
-										))}
-									</div>
-								</div>
-
-								<div className="text-2xl">
-									<div
-										data-score={score !== ''}
-										className="bg-white p-4 text-center text-gray-400 data-[score=true]:text-gray-800 group-data-[thrower=false]:hidden"
-									>
-										{score === '' ? 'Enter score' : score}
-									</div>
-
-									<UndoScoreForm
-										method="post"
-										className="flex items-center justify-between gap-2 bg-gray-700 p-4 text-gray-400 group-data-[thrower=true]:hidden"
-									>
-										<span>Last: {lastPlayerScore ?? 0}</span>
-										<button type="submit" name="intent" value="undo_score" className="p-0.5 disabled:text-gray-500">
-											<Undo2Icon className="size-7" />
-										</button>
-									</UndoScoreForm>
-								</div>
-							</li>
-						);
-					})}
-				</ul>
+							<UndoScoreForm
+								method="post"
+								className="flex items-center justify-between gap-2 bg-gray-700 p-4 text-gray-400"
+							>
+								<span>Last: {lastScore}</span>
+								<button type="submit" name="intent" value="undo_score" className="p-0.5 disabled:text-gray-500">
+									<Undo2Icon className="size-7" />
+								</button>
+							</UndoScoreForm>
+						</div>
+					</div>
+				) : null}
 
 				<AddScoreForm
 					ref={scoreFormRef}
@@ -368,6 +402,33 @@ export default function Game() {
 			</main>
 		</div>
 	);
+}
+
+function calculate(game, playerId) {
+	let { legs } = game;
+
+	let playerThrows = legs.flatMap(l => l.throws).filter(t => t.playerId === playerId);
+	let leg = game.legs[game.legs.length - 1];
+
+	let legsWon = legs.filter(l => l.winnerId === playerId).length;
+
+	let legAverage = 0;
+	let dartsThrown = 0;
+	let legTotalScore = 0;
+	if (leg != undefined && leg.winnerId == undefined) {
+		let legPlayerThrows = leg.throws.filter(t => t.playerId === playerId);
+		dartsThrown = legPlayerThrows.reduce((acc, t) => acc + t.darts, 0);
+		legTotalScore = legPlayerThrows.reduce((acc, t) => acc + t.score, 0);
+
+		legAverage = legPlayerThrows.length === 0 ? 0 : (legTotalScore / legPlayerThrows.length).toFixed(1);
+	}
+
+	let remaining = game.score - legTotalScore;
+
+	let matchTotalScore = playerThrows.reduce((acc, t) => acc + t.score, 0);
+	let matchAverage = playerThrows.length === 0 ? 0 : (matchTotalScore / playerThrows.length).toFixed(1);
+
+	return { legAverage, dartsThrown, legsWon, remaining, matchAverage };
 }
 
 function getThrowerId(players, legs) {

@@ -12,7 +12,7 @@ import Suspense from '../components/suspense';
 export async function playerLoader(request) {
 	let { params } = request;
 
-	let player = db.find('players', params.playerId);
+	let player = db.selectById('players', params.playerId);
 	if (player == undefined) throw new NotFoundError('Player not found');
 
 	return player;
