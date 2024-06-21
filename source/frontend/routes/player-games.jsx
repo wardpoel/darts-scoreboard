@@ -17,6 +17,7 @@ export async function playerGamesLoader(request) {
 	let games = [];
 	for (let gamePlayer of playerGames) {
 		let game = db.selectById('games', gamePlayer.gameId);
+		if (game == undefined) continue;
 
 		if (score !== 'all' && checkout === 'all') {
 			if (game.score.toString() !== score) continue;

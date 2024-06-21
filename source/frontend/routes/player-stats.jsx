@@ -52,7 +52,7 @@ function isWinningPercentagePositive(percentage) {
 export default function PlayerStats() {
 	let { games, legs, darts, total } = useLoaderResult();
 
-	let average = total / darts;
+	let average = total / (darts / 3);
 	return (
 		<div className="px-4 pb-4">
 			{games.played > 0 ? (

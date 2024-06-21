@@ -237,7 +237,7 @@ export default function Game() {
 					<ul className="grid grid-cols-2">
 						{game.players.map(player => {
 							let playerId = player.id;
-							let { legAverage, dartsThrown, legsWon, matchAverage, remaining } = calculate(game, playerId);
+							let { legAverage, legDartsThrown, legsWon, matchAverage, remaining } = calculate(game, playerId);
 							let checkout = checkouts[remaining];
 
 							return (
@@ -249,7 +249,7 @@ export default function Game() {
 									<div className="flex items-center justify-between gap-1 p-4 text-lg font-semibold group-even:flex-row-reverse">
 										<div className="flex items-center gap-1 truncate group-even:flex-row-reverse">
 											<span className="truncate group-even:flex-grow">{player.name}</span>
-											<span>({dartsThrown})</span>
+											<span>({legDartsThrown})</span>
 											<span className="mx-1 hidden text-sm group-data-[thrower=true]:inline">🎯</span>
 										</div>
 
@@ -302,14 +302,14 @@ export default function Game() {
 						<ul className="flex flex-col items-y-start">
 							{game.players.map(player => {
 								let playerId = player.id;
-								let { legAverage, dartsThrown, legsWon, matchAverage, remaining } = calculate(game, playerId);
+								let { legDartsThrown, legsWon, remaining } = calculate(game, playerId);
 
 								return (
 									<li key={playerId} data-thrower={throwerId === playerId} className="group w-full">
 										<div className="grid grid-cols-[auto,repeat(2,max-content)] text-lg font-semibold proportional-nums">
 											<div className="flex items-center gap-1 truncate">
 												<span className="truncate group-even:flex-grow">{player.name}</span>
-												<span>({dartsThrown})</span>
+												<span>({legDartsThrown})</span>
 												<span className="mx-1 hidden text-sm group-data-[thrower=true]:inline">🎯</span>
 											</div>
 
@@ -413,22 +413,23 @@ function calculate(game, playerId) {
 	let legsWon = legs.filter(l => l.winnerId === playerId).length;
 
 	let legAverage = 0;
-	let dartsThrown = 0;
+	let legDartsThrown = 0;
 	let legTotalScore = 0;
 	if (leg != undefined && leg.winnerId == undefined) {
 		let legPlayerThrows = leg.throws.filter(t => t.playerId === playerId);
-		dartsThrown = legPlayerThrows.reduce((acc, t) => acc + t.darts, 0);
 		legTotalScore = legPlayerThrows.reduce((acc, t) => acc + t.score, 0);
+		legDartsThrown = legPlayerThrows.reduce((acc, t) => acc + t.darts, 0);
 
-		legAverage = legPlayerThrows.length === 0 ? 0 : (legTotalScore / legPlayerThrows.length).toFixed(1);
+		legAverage = legPlayerThrows.length === 0 ? 0 : (legTotalScore / (legDartsThrown / 3)).toFixed(1);
 	}
 
 	let remaining = game.score - legTotalScore;
 
 	let matchTotalScore = playerThrows.reduce((acc, t) => acc + t.score, 0);
-	let matchAverage = playerThrows.length === 0 ? 0 : (matchTotalScore / playerThrows.length).toFixed(1);
+	let matchDarstThrown = playerThrows.reduce((acc, t) => acc + t.darts, 0);
+	let matchAverage = playerThrows.length === 0 ? 0 : (matchTotalScore / (matchDarstThrown / 3)).toFixed(1);
 
-	return { legAverage, dartsThrown, legsWon, remaining, matchAverage };
+	return { legAverage, legDartsThrown, legsWon, remaining, matchAverage };
 }
 
 function getThrowerId(players, legs) {
