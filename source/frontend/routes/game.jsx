@@ -1,3 +1,5 @@
+/// <reference path="../typedefs.js" />
+
 import React, { useEffect, useRef, useState } from 'react';
 import { useForm, useLoaderResult } from 'react-sprout';
 
@@ -11,22 +13,77 @@ import DartsUsedRadioButton from '../components/darts-used-radio-button';
 import useWakeLock from '../hooks/use-stay-lock';
 import BackButton from '../components/back-button';
 import { TrashIcon, Undo2Icon } from 'lucide-react';
+import { SCORE_PRESETS } from './new';
+
+/**
+ *
+ * @param {string} playerId
+ * @returns
+ */
+function createStat(playerId) {
+	let player = db.selectById('players', playerId);
+	if (player == undefined) throw new NotFoundError('Player not found');
+
+	let stat = {};
+	for (let score of SCORE_PRESETS) {
+		stat[score] = {};
+		for (let checkout of Object.values(CHECKOUT_TYPE)) {
+			stat[score][checkout] = {
+				legs: { wins: 0, losses: 0, played: 0 },
+				games: { wins: 0, losses: 0, played: 0 },
+				total: 0,
+				darts: 0,
+			};
+		}
+	}
+
+	let created = db.create('stats', stat);
+	db.update('players', player.id, { ...player, statId: created.id });
+
+	return created;
+}
+
+/**
+ *
+ * @param {string} playerId
+ * @param {Array<Leg>} legs
+ * @returns {PlayerGameState}
+ */
+function getPlayerGameState(playerId, legs) {
+	let wins = 0;
+	let losses = 0;
+	for (let leg of legs) {
+		if (leg.winnerId == undefined) continue;
+		if (leg.winnerId === playerId) {
+			wins += 1;
+		} else {
+			losses += 1;
+		}
+	}
+
+	if (wins > losses) return 'win';
+	if (wins < losses) return 'loss';
+	return 'draw';
+}
 
 export async function gameActions({ data, params }) {
 	let { gameId } = params;
 
+	// check if the game exists
+	let game = db.selectById('games', gameId);
+	if (game == undefined) throw new NotFoundError('Game not found');
+
+	let gamePlayers = db.select('game_players', { gameId: game.id });
+	let players = gamePlayers.map(gp => {
+		let player = db.selectById('players', gp.playerId);
+		if (player == undefined) throw new NotFoundError('Player not found');
+		return player;
+	});
+
 	let intent = data.intent;
 	if (intent === 'add_score') {
-		// check if the game exists
-		let game = db.selectById('games', gameId);
-		if (game == undefined) throw new NotFoundError('Game not found');
-
-		let gamePlayers = db.select('game_players', { gameId: game.id });
-		let players = gamePlayers.map(gp => ({ id: gp.playerId }));
-
 		// get current leg
-		let allLegs = db.select('legs', { gameId: game.id });
-		let legs = allLegs.slice(-2); // Get the last 2 legs
+		let legs = db.select('legs', { gameId: game.id });
 		let currentLeg = legs[legs.length - 1];
 		if (currentLeg == undefined || currentLeg.winnerId != undefined) {
 			let newLeg = db.create('legs', { gameId: game.id, createdAt: Date.now() });
@@ -35,8 +92,7 @@ export async function gameActions({ data, params }) {
 
 		// Add throws to the legs
 		for (let leg of legs) {
-			let throws = db.select('throws', { legId: leg.id });
-			leg.throws = throws;
+			leg.throws = db.select('throws', { legId: leg.id });
 		}
 
 		let throwerId = getThrowerId(players, legs);
@@ -75,23 +131,69 @@ export async function gameActions({ data, params }) {
 
 		db.create('throws', { legId: leg.id, playerId: throwerId, score, darts, createdAt: Date.now() });
 
+		let isFirstThrowOfLeg = leg.throws.length === 0;
+		let isFirstThrowOfGame = legs.length === 1 && isFirstThrowOfLeg;
+
 		// check if the leg is over
 		if (isFinish) {
-			db.update('legs', leg.id, { id: leg.id, gameId: game.id, winnerId: throwerId, createdAt: leg.createdAt });
+			leg.winnerId = throwerId;
+			db.update('legs', leg.id, leg);
+		}
+
+		// Update stats for every player
+		for (let player of players) {
+			let isThrower = player.id === throwerId;
+			// Update stats when the player is the thrower, or when it's the first throw of the leg, or when it's the first throw of the game, or when it's a finish
+			if (!isThrower && !isFirstThrowOfLeg && !isFirstThrowOfGame && !isFinish) continue;
+
+			let stat = player.statId == undefined ? createStat(player.id) : db.selectById('stats', player.statId);
+			let current = stat[game.score][game.checkout];
+
+			// Update total score and darts thrown
+			if (isThrower) {
+				current.total += score;
+				current.darts += darts;
+			}
+
+			// Update leg stats
+			if (isFirstThrowOfLeg) current.legs.played += 1;
+			if (isFinish && isThrower) current.legs.wins += 1;
+			if (isFinish && !isThrower) current.legs.losses += 1;
+
+			// Update game stats
+			if (isFirstThrowOfGame) current.games.played += 1;
+			if (isFinish) {
+				// Also calculate the previous winning/losing for the player
+				let prevState = getPlayerGameState(player.id, legs.slice(0, -1));
+				let newState = getPlayerGameState(player.id, legs);
+				if (prevState !== newState) {
+					if (prevState === 'draw' && newState === 'win') {
+						current.games.wins += 1;
+					} else if (prevState === 'draw' && newState === 'loss') {
+						current.games.losses += 1;
+					} else if (prevState === 'win' && newState === 'draw') {
+						current.games.wins -= 1;
+					} else if (prevState === 'loss' && newState === 'draw') {
+						current.games.losses -= 1;
+					}
+				}
+			}
+
+			// Update the stats
+			db.update('stats', stat.id, { ...stat });
 		}
 	} else if (intent === 'undo_score') {
-		let game = db.selectById('games', gameId);
-		if (game == undefined) throw new NotFoundError('Game not found');
-
 		let legs = db.select('legs', { gameId: game.id });
 		let leg = legs[legs.length - 1];
 		if (leg == undefined) throw new Error('No throws to undo');
 
 		let throws = db.select('throws', { legId: leg.id });
 		if (throws.length === 0) {
-			db.delete('legs', leg.id);
+			let removedLeg = db.delete('legs', leg.id);
 			leg = legs[legs.length - 2];
 			throws = db.select('throws', { legId: leg.id });
+
+			// Update stats for every player because a leg was removed
 		}
 
 		let lastThrow = throws.pop();
@@ -99,6 +201,14 @@ export async function gameActions({ data, params }) {
 
 		db.delete('throws', lastThrow.id);
 		if (leg.winnerId != undefined) db.update('legs', leg.id, { ...leg, winnerId: undefined });
+
+		let playerId = lastThrow.playerId;
+
+		let player = db.selectById('players', playerId);
+		let stat = db.selectById('stats', player.statId);
+		if (stat != undefined) {
+			// update
+		}
 	}
 }
 
