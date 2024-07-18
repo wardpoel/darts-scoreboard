@@ -143,7 +143,11 @@ export async function gameActions({ data, params }) {
 		// Update stats for every player
 		for (let player of players) {
 			let isThrower = player.id === throwerId;
-			// Update stats when the player is the thrower, or when it's the first throw of the leg, or when it's the first throw of the game, or when it's a finish
+			// Update stats when:
+			// player is the thrower
+			// or when it's the first throw of the leg
+			// or when it's the first throw of the game
+			// or when it's a finish
 			if (!isThrower && !isFirstThrowOfLeg && !isFirstThrowOfGame && !isFinish) continue;
 
 			let stat = player.statId == undefined ? createStat(player.id) : db.selectById('stats', player.statId);
@@ -188,26 +192,71 @@ export async function gameActions({ data, params }) {
 		if (leg == undefined) throw new Error('No throws to undo');
 
 		let throws = db.select('throws', { legId: leg.id });
-		if (throws.length === 0) {
-			let removedLeg = db.delete('legs', leg.id);
-			leg = legs[legs.length - 2];
-			throws = db.select('throws', { legId: leg.id });
 
-			// Update stats for every player because a leg was removed
-		}
+		let isWinner = leg.winnerId != undefined;
+		let isFirstThrowOfLeg = throws.length === 1;
 
 		let lastThrow = throws.pop();
 		if (lastThrow == undefined) throw new Error('No throws to undo');
 
 		db.delete('throws', lastThrow.id);
-		if (leg.winnerId != undefined) db.update('legs', leg.id, { ...leg, winnerId: undefined });
 
-		let playerId = lastThrow.playerId;
+		// Delete the leg if it's the last throw of the leg
+		if (isFirstThrowOfLeg) {
+			db.delete('legs', leg.id);
+		} else if (isWinner) {
+			// Update the winner of the leg
+			db.update('legs', leg.id, { ...leg, winnerId: undefined });
+		}
 
-		let player = db.selectById('players', playerId);
-		let stat = db.selectById('stats', player.statId);
-		if (stat != undefined) {
-			// update
+		// Update stats for every player
+		for (let player of players) {
+			// Update stats when:
+			// player is the thrower
+			// or when the leg has a winner
+			// or when it's the last throw of the leg
+			if (!isFirstThrowOfLeg && !isWinner && lastThrow.playerId !== player.id) continue;
+
+			let stat = player.statId == undefined ? createStat(player.id) : db.selectById('stats', player.statId);
+			let current = stat[game.score][game.checkout];
+
+			// Global stats
+			if (isFirstThrowOfLeg) current.legs.played -= 1; // Remove leg from the played legs when first throw of leg
+			if (isFirstThrowOfLeg && legs.length === 1) current.games.played -= 1; // Remove game from the played games when first throw of game
+
+			// Player was the thrower
+			if (player.id === lastThrow.playerId) {
+				current.total -= lastThrow.score;
+				current.darts -= lastThrow.darts;
+			}
+
+			// Update leg stats
+			if (leg.winnerId != undefined) {
+				// Remove the win/loss
+				if (leg.winnerId === player.id) current.legs.wins -= 1;
+				if (leg.winnerId !== player.id) current.legs.losses -= 1;
+			}
+
+			// Update game stats
+			let prevState = getPlayerGameState(player.id, legs);
+			let newState = getPlayerGameState(
+				player.id,
+				legs.filter(l => l.id !== leg.id),
+			);
+			if (prevState !== newState) {
+				if (prevState === 'draw' && newState === 'win') {
+					current.games.wins += 1;
+				} else if (prevState === 'draw' && newState === 'loss') {
+					current.games.losses += 1;
+				} else if (prevState === 'win' && newState === 'draw') {
+					current.games.wins -= 1;
+				} else if (prevState === 'loss' && newState === 'draw') {
+					current.games.losses -= 1;
+				}
+			}
+
+			// Update the stats	item
+			db.update('stats', stat.id, { ...stat });
 		}
 	}
 }

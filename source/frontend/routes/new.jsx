@@ -61,11 +61,12 @@ export default function New() {
 											value={player.id}
 											className="peer"
 											onChange={handlePlayerChange}
+											disabled={playerIds.length >= 2 && index === -1}
 										/>
 
 										<label
 											htmlFor={`player-${player.id}`}
-											className="flex items-center justify-between rounded-md border-2 border-gray-500 p-4 peer-checked:border-blue-500 peer-checked:bg-blue-500"
+											className="flex items-center justify-between rounded-md border-2 border-gray-500 p-4 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-disabled:cursor-not-allowed peer-disabled:opacity-50"
 										>
 											<span>{player.name}</span>
 											{index !== -1 ? (
