@@ -137,7 +137,7 @@ export async function gameActions({ data, params }) {
 		// check if the leg is over
 		if (isFinish) {
 			leg.winnerId = throwerId;
-			db.update('legs', leg.id, leg);
+			db.update('legs', leg.id, { ...leg, throws: undefined });
 		}
 
 		// Update stats for every player
