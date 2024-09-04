@@ -98,6 +98,24 @@ const db = new Database(localStorage, {
 				db.update('legs', leg.id, { ...leg, throws: undefined });
 			}
 		},
+		function (db) {
+			db.loadSchema({
+				tables: [
+					{ name: 'games' },
+					{ name: 'players' },
+					{
+						name: 'game_players',
+						indexes: [{ attributes: [['gameId', 'o => o.gameId']] }, { attributes: [['playerId', 'o => o.playerId']] }],
+					},
+					{ name: 'legs', indexes: [{ attributes: [['gameId', 'o => o.gameId']] }] },
+					{
+						name: 'throws',
+						indexes: [{ attributes: [['legId', 'o => o.legId']] }, { attributes: [['playerId', 'o => o.playerId']] }],
+					},
+					{ name: 'stats' },
+				],
+			});
+		},
 		// function (db) {
 		// 	let players = db.select('players');
 		// 	for (let player of players) {
