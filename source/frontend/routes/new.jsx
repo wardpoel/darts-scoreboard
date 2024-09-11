@@ -8,7 +8,27 @@ import { CHECKOUT_TYPE } from './root';
 export const SCORE_PRESETS = [101, 170, 301, 501];
 
 export async function newLoader() {
-	return db.select('players');
+	let players = db.select('players');
+
+	for (let player of players) {
+		player.stats = db.selectById('stats', player.statId);
+	}
+
+	players = players.sort((playerA, playerZ) => {
+		let scoreA = 0;
+		let scoreZ = 0;
+
+		for (let score of SCORE_PRESETS) {
+			for (let checkout of Object.values(CHECKOUT_TYPE)) {
+				scoreA += playerA.stats[score][checkout].games.played;
+				scoreZ += playerZ.stats[score][checkout].games.played;
+			}
+		}
+
+		return scoreZ - scoreA;
+	});
+
+	return players;
 }
 
 export default function New() {

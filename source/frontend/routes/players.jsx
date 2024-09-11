@@ -6,6 +6,8 @@ import { Link, useForm, useLoaderResult } from 'react-sprout';
 import Header from '../components/header';
 import BackButton from '../components/back-button';
 import Suspense from '../components/suspense';
+import { SCORE_PRESETS } from './new';
+import { CHECKOUT_TYPE } from './root';
 
 export async function playersActions({ data }) {
 	let intent = data.intent;
@@ -41,7 +43,27 @@ export async function playersActions({ data }) {
 }
 
 export async function playersLoader() {
-	return db.select('players');
+	let players = db.select('players');
+
+	for (let player of players) {
+		player.stats = db.selectById('stats', player.statId);
+	}
+
+	players = players.sort((playerA, playerZ) => {
+		let scoreA = 0;
+		let scoreZ = 0;
+
+		for (let score of SCORE_PRESETS) {
+			for (let checkout of Object.values(CHECKOUT_TYPE)) {
+				scoreA += playerA.stats[score][checkout].games.played;
+				scoreZ += playerZ.stats[score][checkout].games.played;
+			}
+		}
+
+		return scoreZ - scoreA;
+	});
+
+	return players;
 }
 
 export default function Players() {
