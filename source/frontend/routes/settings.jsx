@@ -85,7 +85,7 @@ export default function Settings() {
 							alert('Something went wrong importing your data');
 						}}
 					>
-						<input type="file" name="file" accept="text/json" />
+						<input type="file" name="file" accept="application/json" />
 						<button type="submit" name="intent" value="import_data" className="-m-2 p-2">
 							<UploadIcon className="size-7" />
 						</button>
