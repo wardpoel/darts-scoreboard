@@ -14,7 +14,24 @@ export async function playersActions({ data }) {
 
 	if (intent === 'add_player') {
 		let name = data.name;
-		let player = db.create('players', { name });
+
+		let emptyStat = {};
+		for (let score of SCORE_PRESETS) {
+			emptyStat[score] = {};
+			for (let checkout of Object.values(CHECKOUT_TYPE)) {
+				emptyStat[score][checkout] = {
+					legs: { wins: 0, losses: 0, played: 0 },
+					games: { wins: 0, losses: 0, played: 0 },
+					total: 0,
+					darts: 0,
+				};
+			}
+		}
+
+		// Create a new player with an empty stat
+		let stat = db.create('stats', { ...emptyStat, createdAt: Date.now(), updatedAt: Date.now() });
+		let player = db.create('players', { name, statId: stat.id });
+
 		return player;
 	}
 

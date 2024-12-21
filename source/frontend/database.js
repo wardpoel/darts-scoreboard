@@ -116,24 +116,6 @@ const db = new Database(localStorage, {
 				],
 			});
 		},
-		// function (db) {
-		// 	let players = db.select('players');
-		// 	for (let player of players) {
-		// 		let playerGames = db.select('game_players', { playerId: player.id });
-		// 		let legWins = [];
-		// 		for (let playerGame of playerGames) {
-		// 			let game = db.selectById('games', playerGame.gameId);
-		// 			if (game == undefined) continue;
-
-		// 			let gameLegs = db.select('legs', { gameId: game.id });
-		// 			let gameLegWins = gameLegs.filter(leg => leg.winnerId === player.id);
-
-		// 			legWins.push(...gameLegWins);
-		// 		}
-
-		// 		console.log(player.id, legWins);
-		// 	}
-		// },
 	],
 });
 
