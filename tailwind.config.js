@@ -1,3 +1,4 @@
+let paddingSafePlugin = require('tailwindcss-padding-safe');
 let gridPlacementPlugin = require('tailwindcss-grid-placement');
 
 module.exports = {
@@ -5,5 +6,5 @@ module.exports = {
 	theme: {
 		extend: {},
 	},
-	plugins: [gridPlacementPlugin],
+	plugins: [paddingSafePlugin, gridPlacementPlugin],
 };
